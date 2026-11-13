@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How the Net Works</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="An interactive field guide to how the Internet and enterprise networks work: DNS, DHCP, Active Directory, PKI, proxies, email, firewalls, VLANs, routing, IDS/IPS and more.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a class="brand" href="#top" aria-label="How the Net Works, back to top">
+      <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="9" width="10" height="10" rx="2"/><rect x="16" y="2" width="10" height="10" rx="2"/><rect x="16" y="16" width="10" height="10" rx="2"/><path d="M12 14h2v-7h2M14 14v7h2"/></svg>
+      <span>How the Net Works</span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#map">Map</a>
+      <a href="#layers">Layers</a>
+      <a href="#addressing">Addressing</a>
+      <a href="#services">Services</a>
+      <a href="#ports">Ports</a>
+      <a href="#quiz">Quiz</a>
+    </nav>
+    <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch colour theme">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="4.2"/><path d="M10 1.5v2.2M10 16.3v2.2M1.5 10h2.2M16.3 10h2.2M4 4l1.5 1.5M14.5 14.5 16 16M4 16l1.5-1.5M14.5 5.5 16 4"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="intro wrap">
+    <p class="eyebrow">A field guide to the Internet and enterprise networks</p>
+    <h1>Every login, web page and email crosses a dozen machines before you see it. Here they all are.</h1>
+    <p class="lede">Below is the complete network of Meridian Freight, a fictional 400-person company: the services it can't run without, the security controls around them, and the Internet beyond. Click any device to see what it does. Then follow a packet as it moves through the network, header by header.</p>
+  </section>
+
+  <!-- ============================== MAP ============================== -->
+  <section id="map" class="section wrap" aria-labelledby="map-h">
+    <div class="section-head">
+      <h2 id="map-h">The network map</h2>
+      <div class="mode-tabs" role="tablist" aria-label="Map mode">
+        <button role="tab" id="tab-explore" aria-selected="true" aria-controls="panel" type="button">Explore devices</button>
+        <button role="tab" id="tab-journey" aria-selected="false" aria-controls="panel" type="button">Follow a packet</button>
+      </div>
+    </div>
+
+    <div class="map-layout">
+      <figure class="map-card">
+        <div class="map-scroll" id="map-scroll">
+          <svg id="net-svg" viewBox="0 0 1280 910" role="group" aria-label="Network diagram of Meridian Freight"></svg>
+        </div>
+        <figcaption class="legend">
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="3" y="4" width="24" height="12" rx="3"/></svg>Switch, router, AP</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><polygon points="2,10 8,2 22,2 28,10 22,18 8,18"/></svg>Security control</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="7" y="2" width="16" height="16" rx="3"/></svg>Server or service</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="10" r="8"/></svg>Endpoint</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="10" r="8" class="dash"/></svg>Outside our control</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="dash"/></svg>Mirror copy or wireless</span>
+          <span class="lg hint">Scroll sideways on small screens</span>
+        </figcaption>
+      </figure>
+
+      <aside class="panel" id="panel" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ============================== LAYERS ============================== -->
+  <section id="layers" class="section wrap" aria-labelledby="layers-h">
+    <div class="section-head">
+      <h2 id="layers-h">Layers: who handles what</h2>
+    </div>
+    <p class="section-lede">Networking is split into layers so each job can be solved separately. Cables don't care about email, and email doesn't care about cables. The OSI model has seven layers; the TCP/IP model the Internet actually runs on folds them into four. Pick a layer, or click part of the packet below.</p>
+
+    <div class="layers-grid">
+      <div class="osi" id="osi" role="listbox" aria-label="OSI layers"></div>
+      <article class="layer-detail" id="layer-detail"></article>
+    </div>
+
+    <div class="encap">
+      <div class="encap-head">
+        <h3>One real packet, unwrapped</h3>
+        <p>The laptop's request to the proxy, as it crosses the trunk between the access switch and the core. Each layer wraps the one above it in its own header. Click a header to read it.</p>
+      </div>
+      <div class="encap-scroll"><div class="encap-strip" id="encap-strip"></div></div>
+      <dl class="encap-fields" id="encap-fields"></dl>
+    </div>
+  </section>
+
+  <!-- ============================== ADDRESSING ============================== -->
+  <section id="addressing" class="section wrap" aria-labelledby="addr-h">
+    <div class="section-head">
+      <h2 id="addr-h">Addressing &amp; subnets</h2>
+    </div>
+    <p class="section-lede">An IPv4 address is 32 bits. The prefix length (the number after the slash) says how many of those bits name the network; the rest number the hosts inside it. Each VLAN in the map is one subnet. Pick a row from Meridian's address plan, or type your own.</p>
+
+    <div class="addr-grid">
+      <div class="calc" id="calc">
+        <div class="calc-inputs">
+          <label class="field">
+            <span>IPv4 address</span>
+            <input id="calc-ip" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="10.10.1.57">
+          </label>
+          <label class="field field-cidr">
+            <span>Prefix <output id="calc-cidr-out">/22</output></span>
+            <input id="calc-cidr" type="range" min="8" max="32" value="22">
+          </label>
+        </div>
+        <p class="calc-error" id="calc-error" hidden>Enter four numbers from 0 to 255 separated by dots, like 192.168.1.10.</p>
+        <div class="bits" id="calc-bits" aria-label="Address in binary"></div>
+        <dl class="calc-out" id="calc-out"></dl>
+        <div class="split">
+          <label class="field field-inline">
+            <span>Split this subnet into</span>
+            <select id="calc-split">
+              <option value="1">2 subnets</option>
+              <option value="2" selected>4 subnets</option>
+              <option value="3">8 subnets</option>
+              <option value="4">16 subnets</option>
+            </select>
+          </label>
+          <ol class="split-list" id="calc-split-list"></ol>
+        </div>
+      </div>
+
+      <div class="plan">
+        <h3>Meridian's address plan</h3>
+        <div class="table-scroll">
+          <table class="plan-table" id="plan-table">
+            <thead><tr><th>VLAN</th><th>Name</th><th>Subnet</th><th>Gateway</th><th>Used for</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="addr-notes">
+          <div>
+            <h4>Private vs public</h4>
+            <p>Inside, Meridian uses private ranges (10/8, 172.16/12), which any organisation can reuse and the Internet won't route. On the way out, the firewall's NAT swaps them for one of the 16 public addresses in 203.0.113.0/28.</p>
+          </div>
+          <div>
+            <h4>Same subnet or not?</h4>
+            <p>A host compares the destination with its own address under its mask. Same network bits: ARP for the host directly. Different: send the frame to the default gateway and let it route.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== SERVICES ============================== -->
+  <section id="services" class="section wrap" aria-labelledby="svc-h">
+    <div class="section-head">
+      <h2 id="svc-h">Services &amp; concepts</h2>
+    </div>
+    <p class="section-lede">Every building block on the map, in one place: what it does, how it works, the ports it uses, what breaks when it fails, and the products you'll meet in real networks.</p>
+    <div class="svc-tools">
+      <label class="search">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4.5 4.5"/></svg>
+        <input id="svc-search" type="search" placeholder="Search: kerberos, 802.1Q, MX, NAT…" aria-label="Search services and concepts">
+      </label>
+      <div class="chips" id="svc-cats" role="group" aria-label="Filter by category"></div>
+    </div>
+    <div class="svc-grid" id="svc-grid"></div>
+    <p class="empty" id="svc-empty" hidden>Nothing matches that search. Try a protocol name or a port number.</p>
+  </section>
+
+  <!-- ============================== PORTS ============================== -->
+  <section id="ports" class="section wrap" aria-labelledby="ports-h">
+    <div class="section-head">
+      <h2 id="ports-h">Ports worth knowing</h2>
+    </div>
+    <p class="section-lede">Firewall rules, packet captures and troubleshooting all come down to port numbers. Rows marked <span class="tag tag-risky">risky</span> should never be reachable from the Internet; <span class="tag tag-legacy">legacy</span> ones should be retired.</p>
+    <div class="svc-tools">
+      <label class="search">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4.5 4.5"/></svg>
+        <input id="port-search" type="search" placeholder="Filter by port, protocol or service" aria-label="Filter ports">
+      </label>
+    </div>
+    <div class="table-scroll">
+      <table class="ports-table" id="ports-table">
+        <thead><tr><th>Port</th><th>Transport</th><th>Service</th><th>What it's for</th><th>On the map</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================== QUIZ ============================== -->
+  <section id="quiz" class="section wrap" aria-labelledby="quiz-h">
+    <div class="section-head">
+      <h2 id="quiz-h">Troubleshooting quiz</h2>
+    </div>
+    <p class="section-lede">Real problems from real help desks. Each answer explains the reasoning.</p>
+    <div class="quiz" id="quiz-box"></div>
+  </section>
+
+</main>
+
+<footer class="footer wrap">
+  <p>Meridian Freight is fictional. Public addresses come from the documentation ranges (RFC 5737) and domain names from the reserved example names (RFC 2606), so nothing here points at a real network.</p>
+  <p>Built as a single static page: no tracking, no build step.</p>
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
