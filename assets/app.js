@@ -367,6 +367,8 @@
     $$(".link", svg).forEach(function (p) { p.classList.remove("active", "hl"); });
     stopPacket();
     stopAutoplay();
+    var mp = document.querySelector("#map .mini-player");
+    if (mp) mp.hidden = true;
   }
 
   function journeysWith(id) {
@@ -438,7 +440,8 @@
     return '<dl class="basics only-beg">' +
       "<div><dt>What it is</dt><dd>" + rich(c.b.is) + "</dd></div>" +
       "<div><dt>What it does</dt><dd>" + rich(c.b.does) + "</dd></div>" +
-      "<div><dt>What it depends on</dt><dd>" + rich(c.b.needs) + "</dd></div></dl>";
+      "<div><dt>What it depends on</dt><dd>" + rich(c.b.needs) + "</dd></div>" +
+      (c.matters ? "<div><dt>Why it matters</dt><dd>" + rich(c.matters) + "</dd></div>" : "") + "</dl>";
   }
   function conceptBody(c) {
     var html =
@@ -450,7 +453,7 @@
     if (c.examples) kv += "<dt>Examples</dt><dd>" + rich(c.examples) + "</dd>";
     if (kv) html += '<dl class="kv min-int">' + kv + "</dl>";
     if (c.breaks) html += '<div class="callout min-int"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>";
-    html += deepBox(c.deep, "Going deeper");
+    html += deepBox(c.deep, "Architecture notes");
     html += '<div><button type="button" class="btn-link" data-open-svc="' + c.id + '">Open ' + esc(c.name) + ' in the catalog</button></div>';
     return html;
   }
@@ -509,6 +512,7 @@
   /* ---------------- journeys ---------------- */
   function startJourney(i) {
     clearMapState();
+    if (window.innerWidth <= 1080) setTimeout(function () { $("#map .map-card").scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" }); }, 30);
     state.mode = "journey"; state.j = i; state.step = 0; state.sel = null;
     setTabs();
     var j = N.journeys[i];
@@ -530,7 +534,7 @@
       '<div class="panel-block" id="j-step"></div>' +
       '<div class="inspector min-int" id="j-insp"></div>' +
       '<p class="meta min-int" id="j-path"></p>' +
-      deepBox(j.deep, "Expert notes");
+      deepBox(j.deep, "Notes for architects");
 
     $("#j-back").addEventListener("click", showJourneyList);
     $("#j-prev").addEventListener("click", function () { stopAutoplay(); goStep(state.step - 1); });
@@ -569,6 +573,8 @@
       if (p) p.classList.add("active");
     }
     playPath(s.path);
+    centerOn($("#map .map-card"), s.path.map(function (id) { return nodeById[id]; }), 1280);
+    miniPlayer($("#map .map-card"), k, j.steps.length, s.title);
 
     // panel
     $$("[data-step]", panel).forEach(function (b, idx) {
@@ -1022,7 +1028,7 @@
       (l.easy ? '<p class="only-beg analogy-line">' + rich(l.easy) + "</p>" : "") +
       "<p>" + rich(l.what) + "</p>" +
       '<dl class="kv"><dt>Unit</dt><dd>' + esc(l.pdu) + "</dd><dt>Address</dt><dd>" + esc(l.addr) + '</dd><dt class="min-int">Protocols</dt><dd class="min-int">' + esc(l.protocols) + "</dd><dt>Devices</dt><dd>" + esc(l.devices) + '</dd><dt class="min-int">Debug with</dt><dd class="min-int">' + rich(l.debug) + "</dd></dl>" +
-      (l.deep ? '<div class="only-exp deep-box"><p class="kicker">Going deeper</p><p>' + rich(l.deep) + "</p></div>" : "") +
+      (l.deep ? '<div class="only-exp deep-box"><p class="kicker">Architecture notes</p><p>' + rich(l.deep) + "</p></div>" : "") +
       '<div class="panel-block"><p class="kicker">On the map</p><div class="chips">' + chips + "</div></div>";
     $$("[data-node]", d).forEach(function (b) {
       b.addEventListener("click", function () { selectNode(b.getAttribute("data-node"), false); goToMap(); });
@@ -1202,11 +1208,11 @@
         (c.b ? '<span class="only-beg">' + rich(c.b.is) + '</span><span class="min-int">' + rich(c.what) + "</span>" : rich(c.what)) + "</span></summary>" +
       '<div class="svc-body">' +
         '<p class="kicker min-int">Layer: ' + esc(c.layer) + "</p>" +
-        (c.b ? '<dl class="basics only-beg"><div><dt>What it does</dt><dd>' + rich(c.b.does) + "</dd></div><div><dt>What it depends on</dt><dd>" + rich(c.b.needs) + "</dd></div></dl>" : "") +
+        (c.b ? '<dl class="basics only-beg"><div><dt>What it does</dt><dd>' + rich(c.b.does) + "</dd></div><div><dt>What it depends on</dt><dd>" + rich(c.b.needs) + "</dd></div>" + (c.matters ? "<div><dt>Why it matters</dt><dd>" + rich(c.matters) + "</dd></div>" : "") + "</dl>" : "") +
         '<ul class="min-int">' + c.how.map(function (h) { return "<li>" + rich(h) + "</li>"; }).join("") + "</ul>" +
         (cols ? '<div class="svc-cols min-int">' + cols + "</div>" : "") +
         (c.breaks ? '<div class="callout min-int"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>" : "") +
-        deepBox(c.deep, "Going deeper") +
+        deepBox(c.deep, "Architecture notes") +
         (onMap ? '<div class="panel-block"><h4>On the map</h4><div class="chips">' + onMap + "</div></div>" : "") +
         (rel ? '<div class="panel-block"><h4>Related</h4><div class="chips">' + rel + "</div></div>" : "") +
       "</div></details>";
@@ -1265,8 +1271,8 @@
       var m = nodeById[id];
       return '<button type="button" class="chip" data-node="' + id + '" style="--zc:' + zoneColor(m.zone) + '"><span class="dot"></span>' + esc(m.label) + "</button>";
     }).join("");
-    var tag = p[5] ? ' <span class="tag tag-' + p[5] + '">' + p[5] + "</span>" : "";
-    return '<tr data-lvl="' + (p[6] || 2) + '" data-text="' + esc((p[0] + " " + p[1] + " " + p[2] + " " + p[3] + " " + p[5]).toLowerCase()) + '">' +
+    var tag = p[5] ? ' <span class="tag tag-' + p[5] + '">' + (p[5] === "egg" ? "easter egg" : p[5]) + "</span>" : "";
+    return '<tr' + (p[5] === "egg" ? ' class="egg" tabindex="0"' : "") + ' data-lvl="' + (p[6] || 2) + '" data-text="' + esc((p[0] + " " + p[1] + " " + p[2] + " " + p[3] + " " + p[5]).toLowerCase()) + '">' +
       '<td class="mono">' + esc(p[0]) + '</td><td class="mono">' + esc(p[1]) + '</td><td class="svcname">' + esc(p[2]) + tag + "</td><td>" + esc(p[3]) + "</td><td>" + chips + "</td></tr>";
   }).join("");
   $("#port-search").addEventListener("input", function (e) {
@@ -1348,10 +1354,91 @@
     $(".map-card").insertAdjacentHTML("beforeend", window.I18N.glossaryHTML(mapAbbr, "Short forms on this map"));
   }
 
+
+  /* ================================================================ */
+  /* Responsive helpers: header height, diagram zoom, centring,       */
+  /* compact step controls on small screens, easter egg               */
+  /* ================================================================ */
+  var masthead = $(".masthead");
+  function setMh() { root.style.setProperty("--mh", masthead.offsetHeight + "px"); }
+  setMh();
+  if ("ResizeObserver" in window) new ResizeObserver(setMh).observe(masthead);
+  else window.addEventListener("resize", setMh);
+
+  function isNarrow() { return window.innerWidth <= 1080; }
+
+  // Overview / detail toggle for every scrollable diagram
+  $$(".map-card").forEach(function (card) {
+    var sc = card.querySelector(".map-scroll");
+    if (!sc) return;
+    var ctl = document.createElement("div");
+    ctl.className = "zoom-ctl";
+    ctl.setAttribute("role", "group");
+    ctl.setAttribute("aria-label", "Diagram size");
+    ctl.innerHTML = '<button type="button" data-zoom="fit" aria-pressed="false">Overview</button><button type="button" data-zoom="detail" aria-pressed="true">Detail</button>';
+    card.insertBefore(ctl, sc);
+    ctl.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-zoom]");
+      if (!b) return;
+      var fit = b.getAttribute("data-zoom") === "fit";
+      card.classList.toggle("fit", fit);
+      $$("[data-zoom]", ctl).forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+    });
+  });
+
+  // Scroll a diagram sideways so the given points are centred
+  function centerOn(card, pts, vbWidth) {
+    if (!card || !isNarrow() || card.classList.contains("fit")) return;
+    var sc = card.querySelector(".map-scroll"), sv = sc && sc.querySelector("svg");
+    if (!sv || sc.scrollWidth <= sc.clientWidth + 4) return;
+    var xs = pts.map(function (p) { return p.x; });
+    var cx = (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2;
+    var left = cx * sv.clientWidth / vbWidth - sc.clientWidth / 2;
+    sc.scrollTo({ left: Math.max(0, left), behavior: reduceMotion ? "auto" : "smooth" });
+  }
+
+  // Compact step controls inside the diagram card (shown on small screens)
+  function miniPlayer(card, k, n, title, onPrev, onNext) {
+    if (!card) return;
+    var mp = card.querySelector(".mini-player");
+    if (!mp) {
+      mp = document.createElement("div");
+      mp.className = "mini-player";
+      mp.innerHTML = '<button type="button" class="btn mp-prev" aria-label="Back"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M9.5 2 4 7l5.5 5z"/></svg></button>' +
+        '<div class="mp-text"><span class="mp-count"></span><span class="mp-title"></span></div>' +
+        '<button type="button" class="btn btn-primary mp-next" aria-label="Next"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4.5 2 10 7l-5.5 5z"/></svg></button>';
+      card.insertBefore(mp, card.querySelector(".legend"));
+      mp.querySelector(".mp-prev").addEventListener("click", function () { mp._prev && mp._prev(); });
+      mp.querySelector(".mp-next").addEventListener("click", function () { mp._next && mp._next(); });
+    }
+    mp._prev = onPrev || function () { var b = $("#j-prev"); if (b && !b.disabled) b.click(); };
+    mp._next = onNext || function () { var b = $("#j-next"); if (b) b.click(); };
+    mp.hidden = false;
+    mp.querySelector(".mp-count").textContent = "Step " + (k + 1) + " of " + n;
+    mp.querySelector(".mp-title").textContent = title;
+    mp.querySelector(".mp-prev").disabled = k === 0;
+  }
+
+  // Easter egg: port 666
+  var toastEl = null;
+  function toast(msg) {
+    if (!toastEl) { toastEl = document.createElement("div"); toastEl.className = "toast"; toastEl.setAttribute("role", "status"); document.body.appendChild(toastEl); }
+    toastEl.textContent = msg;
+    toastEl.classList.remove("show"); void toastEl.offsetWidth; toastEl.classList.add("show");
+  }
+  document.addEventListener("click", function (e) {
+    var tr = e.target.closest && e.target.closest("tr.egg");
+    if (tr) { tr.classList.remove("glitch"); void tr.offsetWidth; tr.classList.add("glitch"); toast("Secret found: port 666. Rip and tear, but keep it off the firewall."); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("tr.egg")) { e.preventDefault(); e.target.click(); }
+  });
+
   /* Shared helpers for builder.js */
   window.HTNW = {
     esc: esc, rich: rich, measure: measure, pointAt: pointAt, ptsToD: ptsToD,
     openService: openService, reduceMotion: reduceMotion, conceptById: conceptById,
-    wiresharkFilter: wiresharkFilter, getLevel: getLevel, onLevel: function (fn) { levelListeners.push(fn); }
+    wiresharkFilter: wiresharkFilter, getLevel: getLevel, onLevel: function (fn) { levelListeners.push(fn); },
+    centerOn: centerOn, miniPlayer: miniPlayer
   };
 })();

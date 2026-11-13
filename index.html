@@ -32,9 +32,9 @@
       <a href="#quiz">Quiz</a>
     </nav>
     <div class="level-switch" role="group" aria-label="Learning depth">
-      <button type="button" data-set-level="beginner" aria-pressed="false">Beginner</button>
-      <button type="button" data-set-level="intermediate" aria-pressed="true">Intermediate</button>
-      <button type="button" data-set-level="expert" aria-pressed="false">Expert</button>
+      <button type="button" data-set-level="beginner" aria-pressed="false" aria-label="Beginner (management)"><span class="lv-l">Beginner</span><span class="lv-s">Mgmt</span></button>
+      <button type="button" data-set-level="intermediate" aria-pressed="true" aria-label="Intermediate (IT staff)"><span class="lv-l">Intermediate</span><span class="lv-s">IT</span></button>
+      <button type="button" data-set-level="expert" aria-pressed="false" aria-label="Expert (infrastructure architects)"><span class="lv-l">Expert</span><span class="lv-s">Arch.</span></button>
     </div>
     <div class="lang-switch" role="group" aria-label="Language">
       <button type="button" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
@@ -58,18 +58,18 @@
       <div class="level-cards" role="group" aria-label="Learning depth">
         <button type="button" class="level-card" data-set-level="beginner" aria-pressed="false">
           <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="lc-name">Beginner</span>
-          <span class="lc-desc">New to networking. Every term in plain words: what it is, what it does and what it depends on. Short forms are written out.</span>
+          <span class="lc-name">Beginner <span class="lc-role">For management</span></span>
+          <span class="lc-desc">Understand what your IT teams are talking about. Every term in plain words: what it is, what it does, what it depends on and why it matters to the business. Short forms are written out.</span>
         </button>
         <button type="button" class="level-card" data-set-level="intermediate" aria-pressed="true">
           <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="lc-name">Intermediate</span>
-          <span class="lc-desc">IT generalist. Protocols, ports, firewall rules and packet headers, and how the pieces fit.</span>
+          <span class="lc-name">Intermediate <span class="lc-role">For IT staff</span></span>
+          <span class="lc-desc">Protocols, ports, firewall rules and packet headers, and how the pieces fit together day to day.</span>
         </button>
         <button type="button" class="level-card" data-set-level="expert" aria-pressed="false">
           <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="lc-name">Expert</span>
-          <span class="lc-desc">Network or security engineer. Protocol internals, attack paths, design trade-offs and Wireshark filters.</span>
+          <span class="lc-name">Expert <span class="lc-role">For infrastructure architects</span></span>
+          <span class="lc-desc">Design trade-offs, redundancy and scaling, attack paths, protocol internals and Wireshark filters.</span>
         </button>
       </div>
     </div>
@@ -100,7 +100,7 @@
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="dash"/></svg>Mirror copy or wireless</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="9" cy="10" r="4.5" class="fdot"/><circle cx="21" cy="10" r="3.8" class="fdot rev"/></svg>Request · reply</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M10 5l10 10M20 5 10 15" class="fx"/></svg>Dropped</span>
-          <span class="lg hint">Scroll sideways on small screens</span>
+          <span class="lg hint">Scroll sideways, or tap Overview</span>
         </figcaption>
       </figure>
 
@@ -148,7 +148,10 @@
           <span>Separate VLANs for users, servers and guests</span>
         </label>
       </div>
-      <div class="b-palette" id="b-palette" role="group" aria-label="Components"></div>
+      <details class="b-pal" id="b-pal" open>
+        <summary>Components</summary>
+        <div class="b-palette" id="b-palette" role="group" aria-label="Components"></div>
+      </details>
     </div>
 
     <div class="map-layout">
@@ -160,7 +163,7 @@
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="7" y="2" width="16" height="16" rx="3" class="ghost-key"/></svg>Empty slot: click to add</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="9" cy="10" r="4.5" class="fdot"/><circle cx="21" cy="10" r="3.8" class="fdot rev"/></svg>Working traffic</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="risk-key"/></svg>Traffic that should be blocked</span>
-          <span class="lg hint">Scroll sideways on small screens</span>
+          <span class="lg hint">Scroll sideways, or tap Overview</span>
         </figcaption>
       </figure>
       <aside class="panel b-panel" id="b-panel" aria-live="polite"></aside>
@@ -188,7 +191,7 @@
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="10" r="7"/></svg>Pod</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="5" y="3" width="20" height="14" rx="3" class="dash"/></svg>Virtual IP (no real machine)</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="dash"/></svg>Logical link</span>
-          <span class="lg hint">Scroll sideways on small screens</span>
+          <span class="lg hint">Scroll sideways, or tap Overview</span>
         </figcaption>
       </figure>
       <aside class="panel" id="v-panel" aria-live="polite"></aside>
@@ -261,7 +264,7 @@
       <div class="plan">
         <h3>Meridian's address plan</h3>
         <div class="table-scroll">
-          <table class="plan-table" id="plan-table">
+          <table class="plan-table stack-table" id="plan-table">
             <thead><tr><th>VLAN</th><th>Name</th><th>Subnet</th><th>Gateway</th><th>Used for</th></tr></thead>
             <tbody></tbody>
           </table>
@@ -314,7 +317,7 @@
       </label>
     </div>
     <div class="table-scroll">
-      <table class="ports-table" id="ports-table">
+      <table class="ports-table stack-table" id="ports-table">
         <thead><tr><th>Port</th><th>Transport</th><th>Service</th><th>What it's for</th><th>On the map</th></tr></thead>
         <tbody></tbody>
       </table>
@@ -345,6 +348,7 @@
 <script src="assets/de-core.js"></script>
 <script src="assets/de-journeys.js"></script>
 <script src="assets/de-virtual.js"></script>
+<script src="assets/data-roles.js"></script>
 <script src="assets/app.js"></script>
 <script src="assets/builder.js"></script>
 <script src="assets/virtual.js"></script>

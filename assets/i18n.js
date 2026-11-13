@@ -264,7 +264,16 @@
     "Start with the journeys on the map; they cover every answer here.": "Beginnen Sie mit den Paketreisen in der Karte; sie decken jede Antwort hier ab.",
     "Meridian Freight is fictional. Public addresses come from the documentation ranges (RFC 5737) and domain names from the reserved example names (RFC 2606), so nothing here points at a real network.":
       "Meridian Freight ist erfunden. Öffentliche Adressen stammen aus den Dokumentationsbereichen (RFC 5737) und Domainnamen aus den reservierten Beispielnamen (RFC 2606), nichts hier zeigt also auf ein echtes Netzwerk.",
-    "Built as a single static page: no tracking, no build step.": "Gebaut als einzelne statische Seite: kein Tracking, kein Build-Schritt."
+    "Built as a single static page: no tracking, no build step.": "Gebaut als einzelne statische Seite: kein Tracking, kein Build-Schritt.",
+    "Why it matters": "Warum es wichtig ist", "Architecture notes": "Architekturhinweise", "Notes for architects": "Hinweise für Architekten",
+    "Overview": "Übersicht", "Detail": "Detail", "Diagram size": "Diagrammgröße", "Scroll sideways, or tap Overview": "Seitlich scrollen oder auf Übersicht tippen",
+    "For management": "Für das Management", "For IT staff": "Für IT-Fachleute", "For infrastructure architects": "Für Infrastruktur-Architekten",
+    "Beginner (management)": "Einsteiger (Management)", "Intermediate (IT staff)": "Fortgeschritten (IT-Fachleute)", "Expert (infrastructure architects)": "Experte (Infrastruktur-Architekten)",
+    "Understand what your IT teams are talking about. Every term in plain words: what it is, what it does, what it depends on and why it matters to the business. Short forms are written out.":
+      "Verstehen, worüber Ihre IT-Teams sprechen. Jeder Begriff in einfachen Worten: was er ist, was er tut, wovon er abhängt und warum er für das Geschäft wichtig ist. Abkürzungen werden ausgeschrieben.",
+    "Protocols, ports, firewall rules and packet headers, and how the pieces fit together day to day.": "Protokolle, Ports, Firewall-Regeln und Paket-Header, und wie alles im Alltag zusammenspielt.",
+    "Design trade-offs, redundancy and scaling, attack paths, protocol internals and Wireshark filters.": "Design-Abwägungen, Redundanz und Skalierung, Angriffswege, Protokoll-Interna und Wireshark-Filter.",
+    "easter egg": "Easter Egg", "Secret found: port 666. Rip and tear, but keep it off the firewall.": "Geheimnis gefunden: Port 666. Rip and tear – aber bitte nicht durch die Firewall."
   };
 
   var PHRASES = [

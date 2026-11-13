@@ -12,9 +12,15 @@ An EN/DE switch in the header changes the language of the whole page (remembered
 
 A switch in the header and the intro sets the depth for the whole page (remembered per browser):
 
-- **Beginner:** every concept and device is explained in three plain lines: what it is, what it does and what it depends on. Every short form (DNS, VLAN, DHCP…) is written out beside itself wherever it appears, and each diagram gets a list of the short forms it uses. Steps use simple sentences with a from → to summary, only essential ports are listed, packet headers and jargon are hidden, and the quiz uses beginner questions.
-- **Intermediate:** the full working detail: protocols, ports, firewall rules, packet inspector, address plan.
-- **Expert:** adds "Going deeper" notes to every concept, layer and device (protocol internals, attack paths, design trade-offs), expert notes per journey and scenario, an auto-generated Wireshark display filter on every packet step, expert-only ports and an expert quiz.
+- **Beginner (management):** every concept and device is explained in plain lines: what it is, what it does, what it depends on and why it matters to the business. Every short form (DNS, VLAN, DHCP…) is written out beside itself wherever it appears, and each diagram gets a list of the short forms it uses. Steps use simple sentences with a from → to summary, only essential ports are listed, packet headers and jargon are hidden, and the quiz uses beginner questions.
+- **Intermediate (IT staff):** the full working detail: protocols, ports, firewall rules, packet inspector, address plan.
+- **Expert (infrastructure architects):** adds architecture notes to every concept, layer and device (protocol internals, attack paths, design trade-offs), expert notes per journey and scenario, an auto-generated Wireshark display filter on every packet step, expert-only ports and an expert quiz.
+
+## Desktop and mobile
+
+On wide screens each diagram sits beside its reading panel. Below 1360px the header splits into two rows, and below 1080px the panels move under the diagrams. On phones and tablets, every diagram has an Overview/Detail toggle and scrolls sideways to centre the active step, journeys and scenarios get compact step controls right under the diagram, tables turn into stacked rows, and the builder's component list folds away.
+
+The ports list hides a small easter egg.
 
 ## What's inside
 
@@ -51,6 +57,7 @@ assets/data.js         base content: topology, flows, dependencies, concepts, jo
 assets/data-depth.js   beginner and expert material layered onto data.js, plus level-tagged ports and quiz
 assets/data-virtual.js virtualization and Kubernetes diagrams, scenarios and concepts
 assets/virtual.js      the virtual networks section
+assets/data-roles.js   management "why it matters" lines (EN + DE) and one extra port
 assets/data-basics.js  beginner basics (is / does / depends on) and the short-form glossary (EN + DE)
 assets/i18n.js         language switch, German interface text, short-form expansion
 assets/de-*.js         German content for the map, concepts, journeys, flows, quiz and virtual networks

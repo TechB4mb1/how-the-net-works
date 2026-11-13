@@ -150,6 +150,8 @@
 
   /* ---------------- map state ---------------- */
   function clearMarks() {
+    var mp = document.querySelector("#v-card .mini-player");
+    if (mp) mp.hidden = true;
     svg.classList.remove("journey-on");
     D.nodes.forEach(function (n) { nodeEl[n.id].classList.remove("sel", "on", "dim", "here"); });
     $$(".link", svg).forEach(function (p) { p.classList.remove("active", "hl"); });
@@ -159,7 +161,7 @@
   function depthBlock(o) {
     return '<p class="only-beg">' + rich(o.easy || o.text) + "</p>" +
       '<p class="min-int">' + rich(o.text) + "</p>" +
-      (o.deep && o.deep.length ? '<div class="only-exp deep-box"><p class="kicker">Going deeper</p><ul>' + o.deep.map(function (d) { return "<li>" + rich(d) + "</li>"; }).join("") + "</ul></div>" : "");
+      (o.deep && o.deep.length ? '<div class="only-exp deep-box"><p class="kicker">Architecture notes</p><ul>' + o.deep.map(function (d) { return "<li>" + rich(d) + "</li>"; }).join("") + "</ul></div>" : "");
   }
   function scenarioCards() {
     return '<div class="journey-list">' + D.scenarios.map(function (s, i) {
@@ -224,6 +226,7 @@
 
   function startScen(i) {
     stopPacket(); clearMarks();
+    if (window.innerWidth <= 1080) setTimeout(function () { $("#v-card").scrollIntoView({ block: "start", behavior: U.reduceMotion ? "auto" : "smooth" }); }, 30);
     st.sel = null; st.scen = i; st.step = 0;
     var s = D.scenarios[i];
     panel.innerHTML =
@@ -234,7 +237,7 @@
         '<button type="button" class="btn btn-primary" id="v-next">Next<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4.5 2 10 7l-5.5 5z"/></svg></button></div>' +
       '<div class="panel-block" id="v-step"></div><div class="inspector min-int" id="v-insp"></div>' +
       '<p class="meta min-int" id="v-path"></p>' +
-      (s.deep ? '<div class="only-exp deep-box"><p class="kicker">Expert notes</p><ul>' + s.deep.map(function (d) { return "<li>" + rich(d) + "</li>"; }).join("") + "</ul></div>" : "");
+      (s.deep ? '<div class="only-exp deep-box"><p class="kicker">Notes for architects</p><ul>' + s.deep.map(function (d) { return "<li>" + rich(d) + "</li>"; }).join("") + "</ul></div>" : "");
     $("#v-back").addEventListener("click", showIntro);
     $("#v-prev").addEventListener("click", function () { goStep(st.step - 1); });
     $("#v-next").addEventListener("click", function () {
@@ -264,6 +267,10 @@
       if (p) p.classList.add("active");
     }
     play(step.path);
+    if (U.centerOn) U.centerOn($("#v-card"), step.path.map(function (id) { return byId[id]; }), 1100);
+    if (U.miniPlayer) U.miniPlayer($("#v-card"), k, s.steps.length, step.title,
+      function () { goStep(st.step - 1); },
+      function () { $("#v-next").click(); });
     $$("[data-vstep]", panel).forEach(function (b, idx) { b.classList.toggle("cur", idx === k); b.classList.toggle("done", idx < k); });
     $("#v-prev").disabled = k === 0;
     $("#v-next").firstChild.textContent = k === s.steps.length - 1 ? "Next scenario" : "Next";

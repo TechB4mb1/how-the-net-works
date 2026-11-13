@@ -1142,3 +1142,102 @@ tbody tr:last-child td { border-bottom: 0; }
 .lang-switch button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 .xp { font-family: var(--f-body); font-weight: 400; font-style: normal; font-stretch: 100%; letter-spacing: 0; color: var(--ink-2); }
 h1 .xp, h2 .xp, h3 .xp, h4 .xp, .sname .xp, .q .xp, .lc-name .xp { font-size: 0.62em; }
+
+/* ------------------------------------------------------------------ */
+/* Responsive layout: header, panels, diagrams, tables (desktop+mobile) */
+/* ------------------------------------------------------------------ */
+:root { --mh: 58px; }
+html { scroll-padding-top: calc(var(--mh) + 12px); }
+.panel { top: calc(env(safe-area-inset-top, 0px) + var(--mh) + 10px); max-height: calc(100vh - var(--mh) - 24px - env(safe-area-inset-top, 0px)); }
+@media (min-width: 1081px) { .map-layout { grid-template-columns: minmax(0, 1fr) clamp(300px, 27vw, 370px); } }
+
+.lv-s { display: none; }
+@media (max-width: 1360px) {
+  .masthead-inner { flex-wrap: wrap; row-gap: 2px; padding-block: 8px 2px; }
+  .masthead .nav { order: 5; flex: 1 1 100%; margin-left: -10px; padding-bottom: 4px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+  .masthead .level-switch { display: inline-flex; margin-left: auto; }
+}
+@media (max-width: 720px) {
+  .lv-l { display: none; }
+  .lv-s { display: inline; }
+  .level-switch button { padding: 5px 9px; }
+  .masthead-inner { gap: 8px; }
+  .brand span { display: none; }
+}
+
+.mode-tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.mode-tabs::-webkit-scrollbar { display: none; }
+.mode-tabs button { white-space: nowrap; }
+@media (max-width: 560px) {
+  .section-head > .mode-tabs { width: 100%; }
+  .mode-tabs button { flex: 1 1 auto; padding: 7px 10px; font-size: 13.5px; }
+  .section { padding-block: 28px; }
+  .panel, .calc, .plan, .layer-detail, .quiz { padding: 16px; }
+  .b-toolbar { padding: 12px; }
+}
+
+/* Overview / detail toggle for diagrams (only where they scroll) */
+.zoom-ctl { display: none; }
+@media (max-width: 1080px) {
+  .zoom-ctl { display: flex; justify-content: flex-end; gap: 2px; padding: 8px 8px 0; }
+  .zoom-ctl button { border: 1px solid var(--line); background: var(--surface); padding: 5px 12px; font: 600 12.5px var(--f-body); color: var(--ink-2); cursor: pointer; }
+  .zoom-ctl button:first-child { border-radius: 8px 0 0 8px; }
+  .zoom-ctl button:last-child { border-radius: 0 8px 8px 0; }
+  .zoom-ctl button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .map-card.fit #net-svg, .map-card.fit #dep-svg, .map-card.fit #b-svg, .map-card.fit #v-svg { min-width: 0; }
+}
+
+/* Compact step controls inside a diagram on small screens */
+.mini-player { display: none; }
+@media (max-width: 1080px) {
+  .mini-player { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--surface); }
+  .mp-text { flex: 1; min-width: 0; display: grid; }
+  .mp-count { font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-ink); }
+  .mp-title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-player .btn { padding: 9px 12px; }
+}
+
+/* Tables become stacked rows on phones */
+@media (max-width: 640px) {
+  .stack-table thead { display: none; }
+  .stack-table, .stack-table tbody { display: block; }
+  .stack-table tr { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .stack-table tbody tr:last-child { border-bottom: 0; }
+  .stack-table td { border: 0; padding: 0; min-width: 0 !important; }
+  .stack-table td:nth-child(n+4) { grid-column: 1 / -1; }
+  .stack-table td:empty { display: none; }
+  .ports-table .svcname { white-space: normal; }
+  .plan-table td:first-child { border-left: 0; }
+  .plan-table tbody tr { border-left: 4px solid var(--zc); }
+}
+
+/* Builder palette as a collapsible group */
+.b-pal > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.b-pal > summary::-webkit-details-marker { display: none; }
+.b-pal > summary::before { content: ""; width: 0; height: 0; border-left: 6px solid var(--ink-2); border-top: 5px solid transparent; border-bottom: 5px solid transparent; transition: transform 0.2s; }
+.b-pal[open] > summary::before { transform: rotate(90deg); }
+.b-pal[open] > summary { margin-bottom: 12px; }
+
+/* Audience labels on the level cards */
+.lc-role { display: inline-block; margin-left: 6px; font: 600 10.5px var(--f-mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--accent-ink); vertical-align: 2px; }
+
+/* Port 666 */
+.tag-egg { background: color-mix(in srgb, var(--z-mgmt) 16%, var(--surface)); color: var(--z-mgmt); }
+tr.egg { cursor: pointer; }
+tr.egg td:first-child { color: var(--bad); font-weight: 600; }
+tr.egg:focus-visible td { outline: none; background: color-mix(in srgb, var(--bad) 8%, var(--surface)); }
+tr.egg.glitch td { animation: egg 0.7s steps(3) 1; }
+@keyframes egg { 0% { background: var(--bad-soft); } 33% { background: transparent; } 66% { background: var(--bad-soft); } 100% { background: transparent; } }
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 10px; font-size: 14px;
+  max-width: calc(100vw - 32px); box-shadow: var(--shadow);
+}
+.toast.show { animation: toast 3.4s ease forwards; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, 16px); } 8%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
+.level-card { align-items: start; }
+.lc-bars { margin-top: 3px; }
+.lc-role { display: block; margin: 2px 0 0; }
+@media (max-width: 860px) { .level-cards { grid-template-columns: minmax(0, 1fr); } }

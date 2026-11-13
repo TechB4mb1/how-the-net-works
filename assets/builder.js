@@ -600,6 +600,8 @@
     if (b && !b.disabled) toggleComp(b.getAttribute("data-comp"));
   });
   $("#b-vlans").addEventListener("change", function (e) { setVlans(e.target.checked); });
+  var pal = $("#b-pal");
+  if (pal && window.innerWidth < 760) pal.open = false;
 
   if (window.I18N) $("#b-card").insertAdjacentHTML("beforeend", window.I18N.glossaryHTML(COMPS.map(function (c) { return c.abbr; }), "Short forms on this map"));
   loadPreset("small");
