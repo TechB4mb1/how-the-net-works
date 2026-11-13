@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
+<script>try{var l=localStorage.getItem("htnw-level");if(l==="beginner"||l==="intermediate"||l==="expert")document.documentElement.setAttribute("data-level",l)}catch(e){}</script>
 </head>
 <body>
 
@@ -23,12 +24,18 @@
       <a href="#map">Map</a>
       <a href="#deps">Dependencies</a>
       <a href="#builder">Builder</a>
+      <a href="#virtual">Virtual</a>
       <a href="#layers">Layers</a>
       <a href="#addressing">Addressing</a>
       <a href="#services">Services</a>
       <a href="#ports">Ports</a>
       <a href="#quiz">Quiz</a>
     </nav>
+    <div class="level-switch" role="group" aria-label="Learning depth">
+      <button type="button" data-set-level="beginner" aria-pressed="false">Beginner</button>
+      <button type="button" data-set-level="intermediate" aria-pressed="true">Intermediate</button>
+      <button type="button" data-set-level="expert" aria-pressed="false">Expert</button>
+    </div>
     <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch colour theme">
       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="4.2"/><path d="M10 1.5v2.2M10 16.3v2.2M1.5 10h2.2M16.3 10h2.2M4 4l1.5 1.5M14.5 14.5 16 16M4 16l1.5-1.5M14.5 5.5 16 4"/></svg>
     </button>
@@ -40,7 +47,28 @@
   <section class="intro wrap">
     <p class="eyebrow">A field guide to the Internet and enterprise networks</p>
     <h1>Every login, web page and email crosses a dozen machines before you see it. Here they all are.</h1>
-    <p class="lede">Below is the complete network of Meridian Freight, a fictional 400-person company: the services it can't run without, the security controls around them, and the Internet beyond. Watch the traffic that flows through it on a normal working day, click any stream, cable or device to see what it carries, then follow single packets step by step.</p>
+    <p class="lede only-beg">This is the whole computer network of Meridian Freight, a made-up company with 400 staff. Every coloured dot is a message moving between computers. Click anything to find out what it is, in plain language, then follow one message from start to finish.</p>
+    <p class="lede min-int">Below is the complete network of Meridian Freight, a fictional 400-person company: the services it can't run without, the security controls around them, and the Internet beyond. Watch the traffic that flows through it on a normal working day, click any stream, cable or device to see what it carries, then follow single packets step by step.</p>
+    <div class="level-pick">
+      <p class="kicker">Choose your depth. Everything on the page adapts, and you can switch at any time.</p>
+      <div class="level-cards" role="group" aria-label="Learning depth">
+        <button type="button" class="level-card" data-set-level="beginner" aria-pressed="false">
+          <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="lc-name">Beginner</span>
+          <span class="lc-desc">New to networking. Plain language and analogies; ports, headers and jargon are hidden.</span>
+        </button>
+        <button type="button" class="level-card" data-set-level="intermediate" aria-pressed="true">
+          <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="lc-name">Intermediate</span>
+          <span class="lc-desc">IT generalist. Protocols, ports, firewall rules and packet headers, and how the pieces fit.</span>
+        </button>
+        <button type="button" class="level-card" data-set-level="expert" aria-pressed="false">
+          <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="lc-name">Expert</span>
+          <span class="lc-desc">Network or security engineer. Protocol internals, attack paths, design trade-offs and Wireshark filters.</span>
+        </button>
+      </div>
+    </div>
   </section>
 
   <!-- ============================== MAP ============================== -->
@@ -135,6 +163,34 @@
     </div>
   </section>
 
+  <!-- ============================== VIRTUAL ============================== -->
+  <section id="virtual" class="section wrap" aria-labelledby="virtual-h">
+    <div class="section-head">
+      <h2 id="virtual-h">Virtual networks</h2>
+      <div class="mode-tabs" role="tablist" aria-label="Virtual network diagram">
+        <button role="tab" type="button" data-vtab="0" aria-selected="true" aria-controls="v-panel">Virtualization host</button>
+        <button role="tab" type="button" data-vtab="1" aria-selected="false" aria-controls="v-panel">Kubernetes</button>
+      </div>
+    </div>
+    <p class="section-lede only-beg">Most "servers" today are virtual: software computers running on shared physical machines. And many apps run in containers managed by Kubernetes. Both build whole networks out of software. Click around to see how.</p>
+    <p class="section-lede min-int">Most of Meridian's servers are virtual machines, and newer apps run on Kubernetes. Both build networks in software on top of the physical one: virtual switches and port groups inside hypervisors, overlays between hosts, pod networks, Services and ingress inside the cluster.</p>
+    <div class="map-layout">
+      <figure class="map-card" id="v-card">
+        <div class="map-scroll">
+          <svg id="v-svg" viewBox="0 0 1100 650" role="group" aria-label="Virtual network diagram"></svg>
+        </div>
+        <figcaption class="legend">
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="2" y="6" width="26" height="8" rx="2"/></svg>Software switch / bridge</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="10" r="7"/></svg>Pod</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="5" y="3" width="20" height="14" rx="3" class="dash"/></svg>Virtual IP (no real machine)</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="dash"/></svg>Logical link</span>
+          <span class="lg hint">Scroll sideways on small screens</span>
+        </figcaption>
+      </figure>
+      <aside class="panel" id="v-panel" aria-live="polite"></aside>
+    </div>
+  </section>
+
   <!-- ============================== LAYERS ============================== -->
   <section id="layers" class="section wrap" aria-labelledby="layers-h">
     <div class="section-head">
@@ -162,6 +218,10 @@
     <div class="section-head">
       <h2 id="addr-h">Addressing &amp; subnets</h2>
     </div>
+    <div class="callout-soft only-beg">
+      <h4>Think of it like street addresses</h4>
+      <p>An IP address such as 10.10.1.57 has two parts: the street (the network) and the house number (the device). The number after the slash says how much of the address is the street. Devices on the same street talk directly; anything else goes via the router, like a post office.</p>
+    </div>
     <p class="section-lede">An IPv4 address is 32 bits. The prefix length (the number after the slash) says how many of those bits name the network; the rest number the hosts inside it. Each VLAN in the map is one subnet. Pick a row from Meridian's address plan, or type your own.</p>
 
     <div class="addr-grid">
@@ -179,7 +239,7 @@
         <p class="calc-error" id="calc-error" hidden>Enter four numbers from 0 to 255 separated by dots, like 192.168.1.10.</p>
         <div class="bits" id="calc-bits" aria-label="Address in binary"></div>
         <dl class="calc-out" id="calc-out"></dl>
-        <div class="split">
+        <div class="split min-int">
           <label class="field field-inline">
             <span>Split this subnet into</span>
             <select id="calc-split">
@@ -205,6 +265,10 @@
           <div>
             <h4>Private vs public</h4>
             <p>Inside, Meridian uses private ranges (10/8, 172.16/12), which any organisation can reuse and the Internet won't route. On the way out, the firewall's NAT swaps them for one of the 16 public addresses in 203.0.113.0/28.</p>
+          </div>
+          <div class="only-exp">
+            <h4>And in IPv6</h4>
+            <p>Every LAN is a /64 (SLAAC needs it), sites usually get a /48, and there's no NAT or broadcast. Meridian would use something like 2001:db8:10:10::/64 for VLAN 10, with ULA (fd00::/8) only where addresses must never be routed.</p>
           </div>
           <div>
             <h4>Same subnet or not?</h4>
@@ -269,7 +333,10 @@
 </footer>
 
 <script src="assets/data.js"></script>
+<script src="assets/data-depth.js"></script>
+<script src="assets/data-virtual.js"></script>
 <script src="assets/app.js"></script>
 <script src="assets/builder.js"></script>
+<script src="assets/virtual.js"></script>
 </body>
 </html>

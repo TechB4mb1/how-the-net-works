@@ -6,6 +6,49 @@
   var SVGNS = "http://www.w3.org/2000/svg";
   var root = document.documentElement;
 
+  /* ---------------- learning level ---------------- */
+  var LEVELS = ["beginner", "intermediate", "expert"];
+  var LEVEL_NUM = { beginner: 1, intermediate: 2, expert: 3 };
+  var levelListeners = [];
+  var initialLevel = "intermediate";
+  try { var savedLevel = localStorage.getItem("htnw-level"); if (LEVELS.indexOf(savedLevel) >= 0) initialLevel = savedLevel; } catch (e) { /* storage unavailable */ }
+  root.setAttribute("data-level", initialLevel);
+  function getLevel() { return root.getAttribute("data-level") || "intermediate"; }
+  function setLevel(l) {
+    if (LEVELS.indexOf(l) < 0) return;
+    root.setAttribute("data-level", l);
+    try { localStorage.setItem("htnw-level", l); } catch (e) { /* ignore */ }
+    syncLevelButtons();
+    levelListeners.forEach(function (fn) { fn(l); });
+  }
+  function syncLevelButtons() {
+    var l = getLevel();
+    Array.prototype.forEach.call(document.querySelectorAll("[data-set-level]"), function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-set-level") === l);
+    });
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-set-level]");
+    if (b) setLevel(b.getAttribute("data-set-level"));
+  });
+  syncLevelButtons();
+
+  /* Wireshark display filter suggested from a step's packets (expert level) */
+  var WS = [[/EAPOL|EAP-/, "eapol"], [/DHCP/, "dhcp"], [/\bARP\b|RARP/, "arp"], [/(SRV|A|MX|TXT)\?|DNS/, "dns"], [/Kerberos|AS-REQ|AS-REP/, "kerberos"],
+    [/\bNTP\b/, "ntp"], [/LDAP/, "ldap"], [/SMB2|SMB 3/, "smb2"], [/RADIUS/, "radius"], [/TLS|STARTTLS|HTTPS/, "tls"], [/HTTP\/2/, "http2"],
+    [/CONNECT|GET \/|HTTP\/1/, "http"], [/EHLO|SMTP|MAIL FROM/, "smtp"], [/IKE/, "isakmp"], [/\bESP\b/, "esp"], [/iSCSI/, "iscsi"], [/Geneve/, "geneve"], [/VXLAN|8472/, "vxlan"]];
+  function wiresharkFilter(pkts) {
+    var txt = pkts.map(function (p) { return p.layers.map(function (l) { return l[1]; }).join(" "); }).join(" ");
+    var found = [];
+    WS.forEach(function (w) { if (w[0].test(txt) && found.indexOf(w[1]) < 0) found.push(w[1]); });
+    if (!found.length) {
+      var m = txt.match(/(TCP|UDP)[^→]*→\s*(\d{2,5})/);
+      if (m) found.push(m[1].toLowerCase() + ".port == " + m[2]);
+    }
+    if (!found.length) return "";
+    return '<p class="only-exp ws"><span class="kicker">Wireshark filter</span> <code>' + found.join(" || ") + "</code></p>";
+  }
+
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
 
@@ -29,7 +72,8 @@
     "Core services": "var(--z-users)",
     "Identity & access": "var(--z-mgmt)",
     "Security": "var(--z-dmz)",
-    "Operations": "var(--z-edge)"
+    "Operations": "var(--z-edge)",
+    "Virtual & cloud": "var(--z-guest)"
   };
   var TAG_COLOR = {
     L1: "var(--z-inet)", L2: "var(--z-users)", L3: "var(--z-servers)", L4: "var(--z-edge)",
@@ -381,15 +425,21 @@
     if (fromMap && window.innerWidth <= 1080) panel.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
   }
 
+  function deepBox(list, title) {
+    if (!list || !list.length) return "";
+    return '<div class="only-exp deep-box"><p class="kicker">' + esc(title) + "</p><ul>" + list.map(function (d) { return "<li>" + rich(d) + "</li>"; }).join("") + "</ul></div>";
+  }
   function conceptBody(c) {
     var html =
+      (c.easy ? '<div class="panel-block only-beg analogy"><p class="kicker">In plain words · ' + esc(c.name) + "</p><p>" + rich(c.easy) + "</p></div>" : "") +
       '<div class="panel-block"><p class="kicker">What it is · ' + esc(c.name) + '</p><p>' + rich(c.what) + '</p></div>' +
-      '<div class="panel-block"><p class="kicker">How it works</p><ul>' + c.how.map(function (h) { return "<li>" + rich(h) + "</li>"; }).join("") + '</ul></div>';
+      '<div class="panel-block min-int"><p class="kicker">How it works</p><ul>' + c.how.map(function (h) { return "<li>" + rich(h) + "</li>"; }).join("") + '</ul></div>';
     var kv = "";
     if (c.ports) kv += "<dt>Ports</dt><dd>" + rich(c.ports) + "</dd>";
     if (c.examples) kv += "<dt>Examples</dt><dd>" + rich(c.examples) + "</dd>";
-    if (kv) html += '<dl class="kv">' + kv + "</dl>";
+    if (kv) html += '<dl class="kv min-int">' + kv + "</dl>";
     if (c.breaks) html += '<div class="callout"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>";
+    html += deepBox(c.deep, "Going deeper");
     html += '<div><button type="button" class="btn-link" data-open-svc="' + c.id + '">Open ' + esc(c.name) + ' in the catalog</button></div>';
     return html;
   }
@@ -414,7 +464,7 @@
       '<div class="panel-block" style="--zc:' + zoneColor(n.zone) + '">' +
         '<span class="zone-chip">' + esc(zoneTitle(n)) + "</span>" +
         "<h3>" + esc(n.label) + "</h3>" +
-        '<p class="meta">' + esc(n.ip) + "</p>" +
+        '<p class="meta min-int">' + esc(n.ip) + "</p>" +
         "<p>" + rich(n.note) + "</p>" +
       "</div>" +
       tabs +
@@ -467,8 +517,9 @@
         '<button type="button" class="btn btn-primary" id="j-next">Next<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4.5 2 10 7l-5.5 5z"/></svg></button>' +
       "</div>" +
       '<div class="panel-block" id="j-step"></div>' +
-      '<div class="inspector" id="j-insp"></div>' +
-      '<p class="meta" id="j-path"></p>';
+      '<div class="inspector min-int" id="j-insp"></div>' +
+      '<p class="meta min-int" id="j-path"></p>' +
+      deepBox(j.deep, "Expert notes");
 
     $("#j-back").addEventListener("click", showJourneyList);
     $("#j-prev").addEventListener("click", function () { stopAutoplay(); goStep(state.step - 1); });
@@ -521,7 +572,10 @@
     $("#j-step").innerHTML =
       '<p class="step-count">Step ' + (k + 1) + " of " + j.steps.length + "</p>" +
       "<h4>" + esc(s.title) + "</h4>" +
-      "<p>" + rich(s.text) + "</p>";
+      (s.easy ? '<p class="only-beg">' + rich(s.easy) + "</p>" : "") +
+      '<p class="only-beg fromto"><span>' + esc(nodeById[s.path[0]].label) + "</span> → <span>" + esc(nodeById[s.path[s.path.length - 1]].label) + "</span></p>" +
+      '<p class="' + (s.easy ? "min-int" : "") + '">' + rich(s.text) + "</p>" +
+      wiresharkFilter(s.pkts);
     $("#j-insp").innerHTML = '<p class="kicker">On the wire</p>' + s.pkts.map(function (pk) {
       return '<div class="pkt"><div class="pkt-label">' + esc(pk.label) + "</div>" + pk.layers.map(function (ly) {
         return '<div class="pkt-row t-' + ly[0] + '" style="--tc:' + TAG_COLOR[ly[0]] + '"><span class="pkt-tag">' + (TAG_TEXT[ly[0]] || ly[0]) + '</span><span class="pkt-val">' + rich(ly[1]) + "</span></div>";
@@ -769,9 +823,9 @@
       '<dl class="kv">' +
         "<dt>From</dt><dd>" + esc(f.from) + "</dd>" +
         "<dt>To</dt><dd>" + esc(f.to) + "</dd>" +
-        "<dt>Protocol</dt><dd>" + rich(f.proto) + "</dd>" +
+        '<dt class="min-int">Protocol</dt><dd class="min-int">' + rich(f.proto) + "</dd>" +
         "<dt>Started by</dt><dd>" + esc(f.starts) + (f.reply ? "; replies flow back" : f.dropped ? "" : "; one-way, no replies") + "</dd>" +
-        "<dt>Rule</dt><dd>" + rich(f.rule) + "</dd>" +
+        '<dt class="min-int">Rule</dt><dd class="min-int">' + rich(f.rule) + "</dd>" +
       "</dl>" +
       '<div class="callout"><strong>' + (f.dropped ? "Where it stops" : "If it's blocked") + "</strong>" + rich(f.fail) + "</div>" +
       '<div class="panel-block"><p class="kicker">Path' + (paths.length > 1 ? "s" : "") + "</p>" + paths.map(function (p) { return '<p class="meta">' + esc(p) + "</p>"; }).join("") + "</div>" +
@@ -954,8 +1008,10 @@
     d.style.setProperty("--lc", LAYER_COLOR[l.n]);
     d.innerHTML =
       '<div class="layer-title"><span class="big">' + l.n + "</span><div><h3>" + esc(l.name) + '</h3><p class="kicker">TCP/IP: ' + esc(l.tcpip) + " layer</p></div></div>" +
+      (l.easy ? '<p class="only-beg analogy-line">' + rich(l.easy) + "</p>" : "") +
       "<p>" + rich(l.what) + "</p>" +
-      '<dl class="kv"><dt>Unit</dt><dd>' + esc(l.pdu) + "</dd><dt>Address</dt><dd>" + esc(l.addr) + "</dd><dt>Protocols</dt><dd>" + esc(l.protocols) + "</dd><dt>Devices</dt><dd>" + esc(l.devices) + "</dd><dt>Debug with</dt><dd>" + rich(l.debug) + "</dd></dl>" +
+      '<dl class="kv"><dt>Unit</dt><dd>' + esc(l.pdu) + "</dd><dt>Address</dt><dd>" + esc(l.addr) + '</dd><dt class="min-int">Protocols</dt><dd class="min-int">' + esc(l.protocols) + "</dd><dt>Devices</dt><dd>" + esc(l.devices) + '</dd><dt class="min-int">Debug with</dt><dd class="min-int">' + rich(l.debug) + "</dd></dl>" +
+      (l.deep ? '<div class="only-exp deep-box"><p class="kicker">Going deeper</p><p>' + rich(l.deep) + "</p></div>" : "") +
       '<div class="panel-block"><p class="kicker">On the map</p><div class="chips">' + chips + "</div></div>";
     $$("[data-node]", d).forEach(function (b) {
       b.addEventListener("click", function () { selectNode(b.getAttribute("data-node"), false); goToMap(); });
@@ -1071,7 +1127,7 @@
       ["Usable hosts", usable.toLocaleString("en-US")],
       ["Total addresses", total.toLocaleString("en-US")]
     ];
-    var out = rows.map(function (r) { return "<div><dt>" + r[0] + "</dt><dd>" + r[1] + "</dd></div>"; }).join("");
+    var out = rows.map(function (r) { return '<div class="' + (r[0] === "Wildcard (ACLs)" || r[0] === "Total addresses" ? "min-int" : "") + '"><dt>' + r[0] + "</dt><dd>" + r[1] + "</dd></div>"; }).join("");
     out += '<div class="wide"><dt>What kind of address</dt><dd>' + esc(classify(ip)) +
       (plan ? " In Meridian's plan: <strong>" + esc(plan.name) + (plan.vlan !== "—" ? " (VLAN " + plan.vlan + ")" : "") + "</strong>, " + esc(plan.cidr) + "." : "") + "</dd></div>";
     $("#calc-out").innerHTML = out;
@@ -1131,12 +1187,15 @@
     if (c.ports) cols += "<div><h4>Ports</h4><p>" + rich(c.ports) + "</p></div>";
     if (c.examples) cols += "<div><h4>In the real world</h4><p>" + rich(c.examples) + "</p></div>";
     return '<details class="svc" id="svc-' + c.id + '" data-cat="' + esc(c.cat) + '" style="--cc:' + CAT_COLOR[c.cat] + '">' +
-      '<summary><span class="badge">' + esc(c.abbr) + '</span><span class="sname">' + esc(c.name) + '</span><span class="swhat">' + rich(c.what) + "</span></summary>" +
+      '<summary><span class="badge">' + esc(c.abbr) + '</span><span class="sname">' + esc(c.name) + '</span><span class="swhat">' +
+        (c.easy ? '<span class="only-beg">' + rich(c.easy) + '</span><span class="min-int">' + rich(c.what) + "</span>" : rich(c.what)) + "</span></summary>" +
       '<div class="svc-body">' +
-        '<p class="kicker">Layer: ' + esc(c.layer) + "</p>" +
-        "<ul>" + c.how.map(function (h) { return "<li>" + rich(h) + "</li>"; }).join("") + "</ul>" +
-        (cols ? '<div class="svc-cols">' + cols + "</div>" : "") +
+        '<p class="kicker min-int">Layer: ' + esc(c.layer) + "</p>" +
+        (c.easy ? '<p class="only-beg">' + rich(c.what) + "</p>" : "") +
+        '<ul class="min-int">' + c.how.map(function (h) { return "<li>" + rich(h) + "</li>"; }).join("") + "</ul>" +
+        (cols ? '<div class="svc-cols min-int">' + cols + "</div>" : "") +
         (c.breaks ? '<div class="callout"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>" : "") +
+        deepBox(c.deep, "Going deeper") +
         (onMap ? '<div class="panel-block"><h4>On the map</h4><div class="chips">' + onMap + "</div></div>" : "") +
         (rel ? '<div class="panel-block"><h4>Related</h4><div class="chips">' + rel + "</div></div>" : "") +
       "</div></details>";
@@ -1149,7 +1208,7 @@
 
   var svcText = {};
   N.concepts.forEach(function (c) {
-    svcText[c.id] = [c.name, c.abbr, c.what, c.how.join(" "), c.ports, c.examples, c.breaks, c.layer].join(" ").toLowerCase();
+    svcText[c.id] = [c.name, c.abbr, c.what, c.easy || "", c.how.join(" "), c.ports, c.examples, c.breaks, c.layer, (c.deep || []).join(" ")].join(" ").toLowerCase();
   });
   function filterSvc() {
     var q = svcSearch.value.trim().toLowerCase();
@@ -1196,7 +1255,7 @@
       return '<button type="button" class="chip" data-node="' + id + '" style="--zc:' + zoneColor(m.zone) + '"><span class="dot"></span>' + esc(m.label) + "</button>";
     }).join("");
     var tag = p[5] ? ' <span class="tag tag-' + p[5] + '">' + p[5] + "</span>" : "";
-    return '<tr data-text="' + esc((p[0] + " " + p[1] + " " + p[2] + " " + p[3] + " " + p[5]).toLowerCase()) + '">' +
+    return '<tr data-lvl="' + (p[6] || 2) + '" data-text="' + esc((p[0] + " " + p[1] + " " + p[2] + " " + p[3] + " " + p[5]).toLowerCase()) + '">' +
       '<td class="mono">' + esc(p[0]) + '</td><td class="mono">' + esc(p[1]) + '</td><td class="svcname">' + esc(p[2]) + tag + "</td><td>" + esc(p[3]) + "</td><td>" + chips + "</td></tr>";
   }).join("");
   $("#port-search").addEventListener("input", function (e) {
@@ -1213,8 +1272,11 @@
   /* ================================================================ */
   var quizBox = $("#quiz-box");
   var quiz = { i: 0, score: 0, answered: false };
+  function levelQuiz() { var n = LEVEL_NUM[getLevel()]; return N.quiz.filter(function (q) { return q.lvl === n; }); }
+  levelListeners.push(function () { quiz = { i: 0, score: 0, answered: false }; renderQuiz(); });
   function renderQuiz() {
-    var total = N.quiz.length;
+    var QS = levelQuiz();
+    var total = QS.length;
     if (quiz.i >= total) {
       var pct = Math.round(quiz.score / total * 100);
       var verdict = pct === 100 ? "Perfect. You could run this network." :
@@ -1226,9 +1288,9 @@
       $("#quiz-restart").addEventListener("click", function () { quiz = { i: 0, score: 0, answered: false }; renderQuiz(); });
       return;
     }
-    var q = N.quiz[quiz.i];
+    var q = QS[quiz.i];
     quizBox.innerHTML =
-      '<div class="quiz-top"><p class="kicker">Question ' + (quiz.i + 1) + " of " + total + " · score " + quiz.score + '</p><div class="quiz-progress" aria-hidden="true"><i style="width:' + (quiz.i / total * 100) + '%"></i></div></div>' +
+      '<div class="quiz-top"><p class="kicker">' + getLevel().charAt(0).toUpperCase() + getLevel().slice(1) + " · question " + (quiz.i + 1) + " of " + total + " · score " + quiz.score + '</p><div class="quiz-progress" aria-hidden="true"><i style="width:' + (quiz.i / total * 100) + '%"></i></div></div>' +
       '<p class="q">' + rich(q.q) + "</p>" +
       '<div class="answers">' + q.a.map(function (a, k) {
         return '<button type="button" class="answer" data-a="' + k + '"><span class="letter">' + "ABCD"[k] + "</span><span>" + rich(a) + "</span></button>";
@@ -1266,6 +1328,7 @@
   /* Shared helpers for builder.js */
   window.HTNW = {
     esc: esc, rich: rich, measure: measure, pointAt: pointAt, ptsToD: ptsToD,
-    openService: openService, reduceMotion: reduceMotion, conceptById: conceptById
+    openService: openService, reduceMotion: reduceMotion, conceptById: conceptById,
+    wiresharkFilter: wiresharkFilter, getLevel: getLevel, onLevel: function (fn) { levelListeners.push(fn); }
   };
 })();

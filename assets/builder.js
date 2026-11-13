@@ -555,7 +555,7 @@
     var checks = R.sec.filter(function (c) { return c.applies; });
     checks.sort(function (a, b) { return (a.pass - b.pass) || (b.weight - a.weight); });
     html += '<div class="panel-block"><p class="kicker">Security checks</p><ul class="checks">' + checks.map(function (c) {
-      return '<li class="' + (c.pass ? "pass" : "fail") + '"><span class="mark" aria-hidden="true">' + (c.pass ? "✓" : "✕") + "</span><div><b>" + esc(c.name) + '</b> <span class="w">' + c.weight + " pts</span><p>" + esc(c.detail) + "</p>" +
+      return '<li class="' + (c.pass ? "pass" : "fail") + '"><span class="mark" aria-hidden="true">' + (c.pass ? "✓" : "✕") + "</span><div><b>" + esc(c.name) + '</b> <span class="w min-int">' + c.weight + " pts</span><p>" + esc(c.detail) + "</p>" +
         (!c.pass && c.fix ? '<button type="button" class="btn-link" data-fix="' + c.fix + '">Fix: ' + (c.fix === "vlans" ? "turn on VLANs" : "add " + esc(comp[c.fix].name.toLowerCase())) + "</button>" : "") +
         "</div></li>";
     }).join("") + "</ul></div>";
