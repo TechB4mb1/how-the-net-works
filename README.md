@@ -10,6 +10,7 @@ The page is built around the complete network of **Meridian Freight**, a fiction
 | --- | --- |
 | **Live traffic** | The map's default view: 30 kinds of traffic flow across the network at once, colour-coded into eight categories (names & time, identity, web, email, files/apps/voice, security monitoring, remote access & admin, denied). Solid dots are requests, hollow dots are replies, and dropped streams end at a red ✕. Click a stream, a cable or a device to see exactly what crosses it: protocol and port, who starts it, the firewall/ACL rule that allows it, and what breaks if it's blocked. |
 | **Service dependencies** | A layered map of 19 services from switching and routing up to email, VPN and the public website. Select one to see what it depends on and what needs it, or simulate an outage to watch the failure cascade up the stack (break DNS and 11 of 18 other services fail). |
+| **Network builder** | Add and remove 27 components (ISP links, router, IPS, firewall, switches, Wi-Fi, DHCP, DNS, domain controllers, CA, RADIUS/NAC, file and mail servers, mail gateway, web server, WAF, proxy, VPN, SIEM, IDS, EDR, jump host) and toggle VLAN segmentation, or start from a preset (home router, small office, flat and exposed, enterprise). The canvas redraws the topology, animates the traffic that works, and shows risky paths in red, such as the Internet reaching laptops with no firewall or guests reaching the file server. A live report covers 12 capabilities, a weighted security score with one-click fixes, and single points of failure. A diff shows what each change did, and selecting a component previews what removing it would break. |
 | **Network map** | Click any of 38 devices: router, firewall, IPS/IDS, DMZ servers, proxy, VPN, core switch, VLANs, AD/DNS, DHCP, CA, RADIUS/NAC, SIEM, jump host and more. Each one explains what it does, how it works, its ports, what breaks without it, and real products. |
 | **Follow a packet** | Seven animated journeys with a header-by-header packet inspector: a laptop joining the network (802.1X → DHCP → ARP → DNS SRV → Kerberos → GPO), browsing via proxy with recursive DNS and NAT, inbound email with SPF/DKIM/DMARC, a public website behind a WAF, VPN with SSO + MFA, malware containment (firewall, proxy, IPS, IDS, SIEM, NAC quarantine), and guest Wi-Fi. |
 | **Layers** | The OSI and TCP/IP models side by side, plus a real frame you can unwrap header by header (Ethernet, 802.1Q, IPv4, TCP, TLS, HTTP, FCS). |
@@ -35,6 +36,7 @@ index.html        page structure
 assets/styles.css design tokens (light and dark), layout, components
 assets/data.js    all content: topology, flows, dependencies, concepts, journeys, layers, ports, quiz
 assets/app.js     rendering and interaction (no libraries)
+assets/builder.js the network builder: component catalog, rules and report
 ```
 
 To change the content, edit `assets/data.js`. Nodes reference concepts by id. Journeys and traffic flows are lists of node ids that must follow drawn links. A missing link makes the packet cut straight across the map.

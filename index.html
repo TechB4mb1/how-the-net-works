@@ -22,6 +22,7 @@
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a>
       <a href="#deps">Dependencies</a>
+      <a href="#builder">Builder</a>
       <a href="#layers">Layers</a>
       <a href="#addressing">Addressing</a>
       <a href="#services">Services</a>
@@ -95,6 +96,42 @@
         </figcaption>
       </figure>
       <aside class="panel" id="dep-panel" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ============================== BUILDER ============================== -->
+  <section id="builder" class="section wrap" aria-labelledby="builder-h">
+    <div class="section-head">
+      <h2 id="builder-h">Build your own network</h2>
+    </div>
+    <p class="section-lede">Add and remove components and see what happens. The map redraws itself, the traffic that works starts flowing, risky paths show in red, and the report scores what works, how secure it is and where a single failure would hurt. Click an empty slot to add something, or a component to see what removing it would change.</p>
+
+    <div class="b-toolbar">
+      <div class="b-row">
+        <span class="kicker">Start from</span>
+        <div class="chips" id="b-presets" role="group" aria-label="Presets"></div>
+        <label class="switch">
+          <input type="checkbox" id="b-vlans" checked>
+          <span class="track" aria-hidden="true"></span>
+          <span>Separate VLANs for users, servers and guests</span>
+        </label>
+      </div>
+      <div class="b-palette" id="b-palette" role="group" aria-label="Components"></div>
+    </div>
+
+    <div class="map-layout">
+      <figure class="map-card" id="b-card">
+        <div class="map-scroll">
+          <svg id="b-svg" viewBox="0 0 1100 710" role="group" aria-label="Network builder canvas"></svg>
+        </div>
+        <figcaption class="legend">
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="7" y="2" width="16" height="16" rx="3" class="ghost-key"/></svg>Empty slot: click to add</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="9" cy="10" r="4.5" class="fdot"/><circle cx="21" cy="10" r="3.8" class="fdot rev"/></svg>Working traffic</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="risk-key"/></svg>Traffic that should be blocked</span>
+          <span class="lg hint">Scroll sideways on small screens</span>
+        </figcaption>
+      </figure>
+      <aside class="panel b-panel" id="b-panel" aria-live="polite"></aside>
     </div>
   </section>
 
@@ -233,5 +270,6 @@
 
 <script src="assets/data.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/builder.js"></script>
 </body>
 </html>

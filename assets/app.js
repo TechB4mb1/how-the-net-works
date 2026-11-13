@@ -1262,4 +1262,10 @@
   /* ================================================================ */
   showLive();
   renderDeps();
+
+  /* Shared helpers for builder.js */
+  window.HTNW = {
+    esc: esc, rich: rich, measure: measure, pointAt: pointAt, ptsToD: ptsToD,
+    openService: openService, reduceMotion: reduceMotion, conceptById: conceptById
+  };
 })();
