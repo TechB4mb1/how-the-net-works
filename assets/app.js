@@ -101,6 +101,8 @@
 
   var gZones = el("g", { class: "zones" }, svg);
   var gLinks = el("g", { class: "links" }, svg);
+  var gFlows = el("g", { class: "flows", "aria-hidden": "true", style: "display:none" }, svg);
+  var gLinkHits = el("g", { class: "link-hits" }, svg);
   var gZoneText = el("g", { class: "zone-text", "aria-hidden": "true" }, svg);
   var gNodes = el("g", { class: "nodes" }, svg);
   var gPacket = el("g", { class: "packet", visibility: "hidden", "aria-hidden": "true" }, svg);
@@ -138,6 +140,14 @@
     var p = el("path", { d: ptsToD(linkPts(l)), class: "link" + (l.kind ? " " + l.kind : "") }, gLinks);
     linkEl[l.from + "|" + l.to] = p;
     linkEl[l.to + "|" + l.from] = p;
+    var hit = el("path", { d: ptsToD(linkPts(l)), class: "link-hit" }, gLinkHits);
+    el("title", {}, hit).textContent = "Cable: " + nodeById[l.from].label + " ↔ " + nodeById[l.to].label;
+    hit.addEventListener("click", function () { if (state.mode === "live") showFlowFilter({ type: "link", a: l.from, b: l.to }); });
+    hit.addEventListener("mouseenter", function () { if (state.mode === "live") p.classList.add("hl"); });
+    hit.addEventListener("mouseleave", function () {
+      var f = state.flowFilter;
+      if (state.mode === "live" && !(f && f.type === "link" && ((f.a === l.from && f.b === l.to) || (f.a === l.to && f.b === l.from)))) p.classList.remove("hl");
+    });
     adj[l.from].push(l.to);
     adj[l.to].push(l.from);
   });
@@ -167,9 +177,9 @@
     lb.textContent = n.label;
     nodeEl[n.id] = g;
 
-    g.addEventListener("click", function () { selectNode(n.id, true); });
+    g.addEventListener("click", function () { activateNode(n.id); });
     g.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectNode(n.id, true); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activateNode(n.id); }
     });
     g.addEventListener("mouseenter", function () { if (state.mode === "explore") hoverLinks(n.id, true); });
     g.addEventListener("mouseleave", function () { if (state.mode === "explore") hoverLinks(n.id, false); });
@@ -195,12 +205,33 @@
     new IntersectionObserver(function (entries) {
       mapVisible = entries[0].isIntersecting;
       if (mapVisible && anim.run && !anim.raf) anim.raf = requestAnimationFrame(anim.run);
+      if (mapVisible) kickFlows();
     }).observe($(".map-card"));
   }
 
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden && anim.run && !anim.raf) anim.raf = requestAnimationFrame(anim.run);
+    if (!document.hidden) kickFlows();
   });
+
+  function pointAt(pts, lens, dist) {
+    for (var k = 0; k < lens.length; k++) {
+      if (dist <= lens[k] || k === lens.length - 1) {
+        var f = lens[k] ? Math.max(0, Math.min(1, dist / lens[k])) : 1;
+        return [pts[k][0] + (pts[k + 1][0] - pts[k][0]) * f, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * f];
+      }
+      dist -= lens[k];
+    }
+    return pts[pts.length - 1];
+  }
+  function measure(pts) {
+    var lens = [], total = 0;
+    for (var i = 1; i < pts.length; i++) {
+      var d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      lens.push(d); total += d;
+    }
+    return { lens: lens, total: total };
+  }
 
   function segPts(a, b) {
     var l = N.links.filter(function (x) { return (x.from === a && x.to === b) || (x.from === b && x.to === a); })[0];
@@ -263,18 +294,27 @@
   /* Panel state                                                      */
   /* ================================================================ */
   var panel = $("#panel");
-  var state = { mode: "explore", sel: null, concept: null, j: null, step: 0, playing: false, timer: 0 };
-  var tabExplore = $("#tab-explore"), tabJourney = $("#tab-journey");
+  var state = { mode: "live", sel: null, concept: null, j: null, step: 0, playing: false, timer: 0,
+    flowFocus: null, flowFilter: null, flowBack: null, cats: {} };
+  N.flowCats.forEach(function (c) { state.cats[c.id] = true; });
+  var tabLive = $("#tab-live"), tabExplore = $("#tab-explore"), tabJourney = $("#tab-journey");
 
   function setTabs() {
+    tabLive.setAttribute("aria-selected", state.mode === "live");
     tabExplore.setAttribute("aria-selected", state.mode === "explore");
     tabJourney.setAttribute("aria-selected", state.mode === "journey");
   }
+  function activateNode(id) {
+    if (state.mode === "live") showFlowFilter({ type: "node", id: id });
+    else selectNode(id, true);
+  }
+  tabLive.addEventListener("click", function () { showLive(); });
   tabExplore.addEventListener("click", function () { showExplore(); });
   tabJourney.addEventListener("click", function () { showJourneyList(); });
 
   function clearMapState() {
-    svg.classList.remove("journey-on");
+    svg.classList.remove("journey-on", "focus-on");
+    stopFlows();
     $$(".node", svg).forEach(function (g) { g.classList.remove("sel", "on", "dim", "here"); });
     $$(".link", svg).forEach(function (p) { p.classList.remove("active", "hl"); });
     stopPacket();
@@ -519,6 +559,368 @@
   });
 
   function goToMap() { $("#map").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); }
+
+
+  /* ================================================================ */
+  /* Live traffic                                                     */
+  /* ================================================================ */
+  var flowById = {}, catById = {};
+  N.flows.forEach(function (f) { flowById[f.id] = f; });
+  N.flowCats.forEach(function (c) { catById[c.id] = c; });
+  var FLOW_SPEED = 80;           // px per second, in map units
+  var flowPaths = [], flowsBuilt = false, flowRaf = 0;
+  function flowColor(cat) { return "var(--fl-" + cat + ")"; }
+
+  function buildFlows() {
+    if (flowsBuilt) return;
+    flowsBuilt = true;
+    var seed = 7;
+    function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    N.flows.forEach(function (f) {
+      f.paths.forEach(function (path) {
+        var pts = pathPoints(path), m = measure(pts);
+        var g = el("g", { class: "flow", style: "--fc:" + flowColor(f.cat) }, gFlows);
+        var line = el("path", { d: ptsToD(pts), class: "flow-line" }, g);
+        var n = Math.max(1, Math.min(4, Math.round(m.total / 210)));
+        var dots = [], k;
+        for (k = 0; k < n; k++) dots.push({ el: el("circle", { r: 4.4, class: "flow-dot" }, g), off: k * m.total / n, rev: false });
+        if (f.reply) for (k = 0; k < n; k++) dots.push({ el: el("circle", { r: 3.5, class: "flow-dot rev" }, g), off: (k + 0.5) * m.total / n, rev: true });
+        if (f.dropped) {
+          var e = pts[pts.length - 1];
+          var x = el("g", { class: "flow-x", transform: "translate(" + (e[0] - 30) + " " + (e[1] - 22) + ")" }, g);
+          el("circle", { r: 8.5 }, x);
+          el("path", { d: "M-3.6 -3.6L3.6 3.6M3.6 -3.6L-3.6 3.6" }, x);
+        }
+        flowPaths.push({ f: f, path: path, g: g, line: line, pts: pts, lens: m.lens, total: m.total, dots: dots, phase: rnd() * m.total, vis: true });
+      });
+    });
+  }
+
+  function pathHasLink(path, a, b) {
+    for (var i = 1; i < path.length; i++) {
+      if ((path[i - 1] === a && path[i] === b) || (path[i - 1] === b && path[i] === a)) return true;
+    }
+    return false;
+  }
+  function pathMatches(path, flt) {
+    if (!flt) return true;
+    if (flt.type === "node") return path.indexOf(flt.id) >= 0;
+    if (flt.type === "link") return pathHasLink(path, flt.a, flt.b);
+    return true;
+  }
+  function flowMatches(f, flt) {
+    if (!flt) return true;
+    if (flt.type === "set") return flt.ids.indexOf(f.id) >= 0;
+    return f.paths.some(function (p) { return pathMatches(p, flt); });
+  }
+  function flowsFor(flt) { return N.flows.filter(function (f) { return flowMatches(f, flt); }); }
+
+  function renderFlowFrame(t) {
+    flowPaths.forEach(function (fp) {
+      if (!fp.vis) return;
+      var T = fp.total;
+      fp.dots.forEach(function (d) {
+        var s = ((t * FLOW_SPEED + d.off + fp.phase) % T + T) % T;
+        var u = s / T;
+        var p = pointAt(fp.pts, fp.lens, d.rev ? T - s : s);
+        d.el.setAttribute("cx", p[0].toFixed(1));
+        d.el.setAttribute("cy", p[1].toFixed(1));
+        var o = Math.min(1, u / 0.05, (1 - u) / 0.05);
+        if (fp.f.dropped) o = Math.min(o, (1 - u) / 0.3);
+        d.el.setAttribute("opacity", Math.max(0, o).toFixed(2));
+      });
+    });
+  }
+  function flowTick(ts) {
+    flowRaf = 0;
+    if (state.mode !== "live" || !mapVisible || document.hidden) return;
+    renderFlowFrame(ts / 1000);
+    flowRaf = requestAnimationFrame(flowTick);
+  }
+  function kickFlows() {
+    if (state.mode !== "live" || reduceMotion || flowRaf) return;
+    flowRaf = requestAnimationFrame(flowTick);
+  }
+  function applyFlows() {
+    var focus = state.flowFocus, flt = state.flowFilter;
+    flowPaths.forEach(function (fp) {
+      var vis;
+      if (focus) vis = fp.f.id === focus;
+      else if (flt) vis = flowMatches(fp.f, flt) && (flt.type === "set" || pathMatches(fp.path, flt));
+      else vis = !!state.cats[fp.f.cat];
+      fp.vis = vis;
+      fp.g.style.display = vis ? "" : "none";
+      fp.line.classList.toggle("show", !!focus && vis);
+      fp.line.classList.toggle("faint", !focus && !!flt && vis);
+    });
+    // nodes and links
+    $$(".node", svg).forEach(function (g) { g.classList.remove("sel", "on", "dim", "here"); });
+    $$(".link", svg).forEach(function (p) { p.classList.remove("active", "hl"); });
+    svg.classList.remove("focus-on");
+    if (focus) {
+      var on = {};
+      flowById[focus].paths.forEach(function (p) { p.forEach(function (id) { on[id] = true; }); });
+      svg.classList.add("focus-on");
+      N.nodes.forEach(function (n) { nodeEl[n.id].classList.toggle("dim", !on[n.id]); });
+    } else if (flt && flt.type === "node") {
+      nodeEl[flt.id].classList.add("sel");
+    } else if (flt && flt.type === "link") {
+      linkEl[flt.a + "|" + flt.b].classList.add("hl");
+    }
+    if (reduceMotion) renderFlowFrame(2.6);
+    else kickFlows();
+  }
+  function startFlows() {
+    buildFlows();
+    svg.classList.add("live-on");
+    gFlows.style.display = "";
+    applyFlows();
+  }
+  function stopFlows() {
+    if (flowRaf) cancelAnimationFrame(flowRaf);
+    flowRaf = 0;
+    gFlows.style.display = "none";
+    svg.classList.remove("live-on");
+  }
+
+  function flowRow(f) {
+    return '<button type="button" class="flow-row' + (f.dropped ? " dropped" : "") + (state.cats[f.cat] ? "" : " off") + '" data-flow="' + f.id + '" data-cat-of="' + f.cat + '" style="--fc:' + flowColor(f.cat) + '">' +
+      '<i></i><span class="fn">' + esc(f.name) + '</span><span class="fp">' + rich(f.proto) + "</span></button>";
+  }
+  function bindFlowRows(scope) {
+    $$("[data-flow]", scope).forEach(function (b) {
+      b.addEventListener("click", function () { focusFlow(b.getAttribute("data-flow")); });
+    });
+  }
+
+  function showLive() {
+    clearMapState();
+    state.mode = "live"; state.sel = null; state.j = null;
+    state.flowFocus = null; state.flowFilter = null; state.flowBack = null;
+    setTabs();
+    startFlows();
+    var chips = N.flowCats.map(function (c) {
+      return '<button type="button" class="chip" aria-pressed="' + !!state.cats[c.id] + '" data-cat="' + c.id + '" style="--fc:' + flowColor(c.id) + '"><span class="dot"></span>' + esc(c.name) + "</button>";
+    }).join("");
+    var groups = N.flowCats.map(function (c) {
+      var fs = N.flows.filter(function (f) { return f.cat === c.id; });
+      return '<div class="flow-group"><p class="kicker flow-group-head" style="--fc:' + flowColor(c.id) + '"><i></i>' + esc(c.name) + "</p>" + fs.map(flowRow).join("") + "</div>";
+    }).join("");
+    panel.innerHTML =
+      '<div class="panel-block">' +
+        '<p class="kicker">Live traffic</p>' +
+        "<h3>A normal Tuesday morning</h3>" +
+        "<p>Every stream of dots is one kind of traffic, coloured by what it's for. Solid dots are requests; hollow dots are replies coming back. Streams that end at a red ✕ are being dropped.</p>" +
+        "<p>Click a stream below, or any cable or device on the map, to see exactly what crosses it.</p>" +
+      "</div>" +
+      '<div class="panel-block"><p class="kicker">Show or hide</p><div class="chips cat-chips" id="cat-chips">' + chips + "</div></div>" +
+      groups;
+    $$("[data-cat]", panel).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.getAttribute("data-cat");
+        state.cats[id] = !state.cats[id];
+        b.setAttribute("aria-pressed", state.cats[id]);
+        $$('[data-cat-of="' + id + '"]', panel).forEach(function (r) { r.classList.toggle("off", !state.cats[id]); });
+        applyFlows();
+      });
+    });
+    bindFlowRows(panel);
+  }
+
+  function filterTitle(flt) {
+    if (flt.type === "node") return { kicker: "Traffic through this device", title: nodeById[flt.id].label };
+    if (flt.type === "link") return { kicker: "Traffic on this cable", title: nodeById[flt.a].label + " ↔ " + nodeById[flt.b].label };
+    return { kicker: "Traffic for this service", title: flt.label };
+  }
+
+  function showFlowFilter(flt) {
+    if (state.mode !== "live") { clearMapState(); state.mode = "live"; setTabs(); startFlows(); }
+    state.flowFocus = null; state.flowFilter = flt; state.flowBack = null;
+    applyFlows();
+    var fs = flowsFor(flt), t = filterTitle(flt);
+    var allowed = fs.filter(function (f) { return !f.dropped; }).length;
+    panel.innerHTML =
+      '<div><button type="button" class="btn-link" id="lv-back">← All traffic</button></div>' +
+      '<div class="panel-block"><p class="kicker">' + esc(t.kicker) + "</p><h3>" + esc(t.title) + "</h3>" +
+        "<p>" + (fs.length
+          ? fs.length + " kind" + (fs.length === 1 ? "" : "s") + " of traffic" + (flt.type === "link" ? " cross this cable" : flt.type === "node" ? " pass through or end here" : "") + (fs.length - allowed ? ", " + (fs.length - allowed) + " of them dropped." : ".")
+          : "Nothing in this model uses it.") + "</p>" +
+        (flt.type === "node" ? '<div><button type="button" class="btn" id="lv-device">Device details</button></div>' : "") +
+      "</div>" +
+      '<div class="flow-group">' + fs.map(flowRow).join("") + "</div>";
+    $$(".flow-row", panel).forEach(function (r) { r.classList.remove("off"); });
+    $("#lv-back").addEventListener("click", showLive);
+    if (flt.type === "node") $("#lv-device").addEventListener("click", function () { selectNode(flt.id, false); });
+    $$("[data-flow]", panel).forEach(function (b) {
+      b.addEventListener("click", function () { focusFlow(b.getAttribute("data-flow"), flt); });
+    });
+    if (window.innerWidth <= 1080 && flt.type !== "set") panel.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+  }
+
+  function focusFlow(id, back) {
+    if (state.mode !== "live") { clearMapState(); state.mode = "live"; setTabs(); startFlows(); }
+    var f = flowById[id], c = catById[f.cat];
+    state.flowFocus = id; state.flowBack = back || null; state.flowFilter = null;
+    applyFlows();
+    var paths = f.paths.map(function (p) { return p.map(function (x) { return nodeById[x].label; }).join(" → "); });
+    panel.innerHTML =
+      '<div><button type="button" class="btn-link" id="lv-back">← ' + (back ? "Back to " + esc(filterTitle(back).title) : "All traffic") + "</button></div>" +
+      '<div class="panel-block" style="--zc:' + flowColor(f.cat) + '"><span class="zone-chip">' + esc(c.name) + "</span><h3>" + esc(f.name) + "</h3><p>" + rich(f.why) + "</p></div>" +
+      '<dl class="kv">' +
+        "<dt>From</dt><dd>" + esc(f.from) + "</dd>" +
+        "<dt>To</dt><dd>" + esc(f.to) + "</dd>" +
+        "<dt>Protocol</dt><dd>" + rich(f.proto) + "</dd>" +
+        "<dt>Started by</dt><dd>" + esc(f.starts) + (f.reply ? "; replies flow back" : f.dropped ? "" : "; one-way, no replies") + "</dd>" +
+        "<dt>Rule</dt><dd>" + rich(f.rule) + "</dd>" +
+      "</dl>" +
+      '<div class="callout"><strong>' + (f.dropped ? "Where it stops" : "If it's blocked") + "</strong>" + rich(f.fail) + "</div>" +
+      '<div class="panel-block"><p class="kicker">Path' + (paths.length > 1 ? "s" : "") + "</p>" + paths.map(function (p) { return '<p class="meta">' + esc(p) + "</p>"; }).join("") + "</div>" +
+      '<div class="chips">' +
+        (f.journey ? '<button type="button" class="chip" data-journey-id="' + f.journey + '">▸ Step through it packet by packet</button>' : "") +
+        '<button type="button" class="chip" data-open-svc="' + f.concept + '">Read about ' + esc(conceptById[f.concept].name) + "</button>" +
+      "</div>";
+    $("#lv-back").addEventListener("click", function () { if (back) showFlowFilter(back); else showLive(); });
+    $$("[data-journey-id]", panel).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id2 = b.getAttribute("data-journey-id");
+        startJourney(N.journeys.map(function (j) { return j.id; }).indexOf(id2));
+      });
+    });
+    bindPanelLinks(panel);
+  }
+
+  /* ================================================================ */
+  /* Service dependency map                                           */
+  /* ================================================================ */
+  var depSvg = $("#dep-svg"), depPanel = $("#dep-panel");
+  var depById = {}, neededBy = {};
+  N.deps.forEach(function (d) { depById[d.id] = d; neededBy[d.id] = []; });
+  N.deps.forEach(function (d) { d.deps.forEach(function (x) { neededBy[x].push(d.id); }); });
+  var ROW_Y = [62, 192, 322, 452, 582], DW = 70, DH = 25;
+  var depState = { sel: null, down: null };
+
+  NET.depRows.forEach(function (label, i) {
+    el("rect", { x: 8, y: ROW_Y[i] - 52, width: 1284, height: 104, rx: 12, class: "dep-band" }, depSvg).style.opacity = i % 2 ? "0" : "";
+    var t = el("text", { x: 22, y: ROW_Y[i] + 4, class: "dep-row" }, depSvg);
+    var words = label.split(" ");
+    if (words.length > 1 && label.length > 14) {
+      var mid = Math.ceil(words.length / 2);
+      el("tspan", { x: 22, dy: -7 }, t).textContent = words.slice(0, mid).join(" ");
+      el("tspan", { x: 22, dy: 15 }, t).textContent = words.slice(mid).join(" ");
+    } else t.textContent = label;
+  });
+  var gDepEdges = el("g", {}, depSvg), gDepNodes = el("g", {}, depSvg);
+  var depEdgeEl = {}, depNodeEl = {};
+  N.deps.forEach(function (d) {
+    d.deps.forEach(function (x) {
+      var b = depById[x];
+      var ax = d.x, ay = ROW_Y[d.row] + DH, bx = b.x, by = ROW_Y[b.row] - DH, dy = (by - ay) * 0.5;
+      depEdgeEl[d.id + ">" + x] = el("path", { d: "M" + ax + " " + ay + " C" + ax + " " + (ay + dy) + " " + bx + " " + (by - dy) + " " + bx + " " + by, class: "dep-edge" }, gDepEdges);
+    });
+  });
+  N.deps.forEach(function (d) {
+    var g = el("g", { class: "dep", transform: "translate(" + d.x + " " + ROW_Y[d.row] + ")", tabindex: "0", role: "button", "aria-label": d.name }, gDepNodes);
+    el("rect", { x: -DW, y: -DH, width: DW * 2, height: DH * 2, rx: 9 }, g);
+    el("text", { class: "dn", y: -3 }, g).textContent = d.name;
+    el("text", { class: "ds", y: 14 }, g).textContent = d.sub;
+    g.addEventListener("click", function () { selectDep(d.id); });
+    g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectDep(d.id); } });
+    depNodeEl[d.id] = g;
+  });
+
+  function affected(id) {
+    var seen = {}, queue = [id], out = [];
+    while (queue.length) {
+      var cur = queue.shift();
+      neededBy[cur].forEach(function (x) { if (!seen[x] && x !== id) { seen[x] = true; out.push(x); queue.push(x); } });
+    }
+    return out;
+  }
+  function selectDep(id) { depState.sel = id; depState.down = null; renderDeps(); }
+  function breakDep(id) { depState.sel = id; depState.down = id; renderDeps(); }
+
+  function depChip(id) { return '<button type="button" class="chip" data-dep="' + id + '">' + esc(depById[id].name) + "</button>"; }
+
+  function renderDeps() {
+    var sel = depState.sel, down = depState.down;
+    N.deps.forEach(function (d) {
+      var g = depNodeEl[d.id];
+      g.classList.remove("sel", "is-dep", "is-need", "dim", "down", "hit");
+      g.style.removeProperty("--d");
+    });
+    Object.keys(depEdgeEl).forEach(function (k) { depEdgeEl[k].classList.remove("e-dep", "e-need", "hot"); });
+    depSvg.classList.toggle("dep-svg-focus", !!sel);
+
+    if (down) {
+      var hit = affected(down), hitSet = {};
+      hit.forEach(function (x) { hitSet[x] = true; });
+      depNodeEl[down].classList.add("down");
+      hit.forEach(function (x) {
+        depNodeEl[x].classList.add("hit");
+        depNodeEl[x].style.setProperty("--d", (Math.abs(depById[down].row - depById[x].row) * 160) + "ms");
+      });
+      N.deps.forEach(function (d) {
+        if (d.id !== down && !hitSet[d.id]) depNodeEl[d.id].classList.add("dim");
+        d.deps.forEach(function (x) { if (hitSet[d.id] && (x === down || hitSet[x])) depEdgeEl[d.id + ">" + x].classList.add("hot"); });
+      });
+      var dd = depById[down];
+      var others = N.deps.length - 1;
+      hit.sort(function (a, b) { return depById[b].row - depById[a].row; });
+      depPanel.innerHTML =
+        '<div class="panel-block"><p class="kicker">Outage simulation</p><h3>' + esc(dd.name) + " is down</h3></div>" +
+        '<div class="panel-block"><div class="big-stat">' + hit.length + " of " + others + "</div><p>other services fail with it" + (hit.length ? ", working up from the bottom of the stack." : ". It is a leaf: nothing else depends on it.") + "</p></div>" +
+        '<ul class="impact"><li class="root"><strong>' + esc(dd.name) + "</strong>" + esc(dd.down) + "</li>" +
+          hit.map(function (x) { return "<li><strong>" + esc(depById[x].name) + "</strong>" + esc(depById[x].down) + "</li>"; }).join("") +
+        "</ul>" +
+        '<div class="quick"><button type="button" class="btn btn-primary" id="dep-restore">Restore ' + esc(dd.name) + "</button></div>";
+      $("#dep-restore").addEventListener("click", function () { selectDep(down); });
+      return;
+    }
+
+    if (!sel) {
+      depPanel.innerHTML =
+        '<div class="panel-block"><p class="kicker">Start here</p><h3>Pull out a building block</h3>' +
+        "<p>Each box is a service; lines run down to what it needs. Click a box to see what it depends on and what depends on it. Or jump straight to an outage:</p></div>" +
+        '<div class="quick">' + ["dns", "ntp", "ad", "fw", "isp", "dhcp"].map(function (id) {
+          return '<button type="button" class="btn btn-danger" data-break="' + id + '">Break ' + esc(depById[id].name) + "</button>";
+        }).join("") + "</div>" +
+        '<div class="panel-block"><p class="kicker">Why this matters</p><p>Outages rarely start where users notice them. "Email is down" can really be DNS, an expired certificate or a clock that drifted. Engineers troubleshoot by walking down this stack.</p></div>';
+      bindDepPanel();
+      return;
+    }
+
+    var d = depById[sel];
+    depNodeEl[sel].classList.add("sel");
+    d.deps.forEach(function (x) { depNodeEl[x].classList.add("is-dep"); depEdgeEl[sel + ">" + x].classList.add("e-dep"); });
+    neededBy[sel].forEach(function (x) { depNodeEl[x].classList.add("is-need"); depEdgeEl[x + ">" + sel].classList.add("e-need"); });
+    N.deps.forEach(function (o) {
+      if (o.id !== sel && d.deps.indexOf(o.id) < 0 && neededBy[sel].indexOf(o.id) < 0) depNodeEl[o.id].classList.add("dim");
+    });
+    var reach = affected(sel).length;
+    depPanel.innerHTML =
+      '<div class="panel-block"><p class="kicker">' + esc(NET.depRows[d.row]) + "</p><h3>" + esc(d.name) + "</h3><p>" + esc(d.what) + "</p></div>" +
+      '<div class="panel-block"><p class="kicker">Depends on</p>' + (d.deps.length ? '<div class="chips">' + d.deps.map(depChip).join("") + "</div>" : "<p>Nothing below it in this model.</p>") + "</div>" +
+      '<div class="panel-block"><p class="kicker">Needed directly by</p>' + (neededBy[sel].length ? '<div class="chips">' + neededBy[sel].map(depChip).join("") + "</div>" : "<p>Nothing. Users deal with it directly.</p>") + "</div>" +
+      '<p class="meta">Counting indirect dependents, ' + reach + " service" + (reach === 1 ? "" : "s") + " rely on it.</p>" +
+      '<div class="quick"><button type="button" class="btn btn-danger" data-break="' + sel + '">Simulate an outage</button></div>' +
+      '<div class="chips">' +
+        '<button type="button" class="chip" data-dep-flows="' + sel + '">See its traffic on the map</button>' +
+        '<button type="button" class="chip" data-open-svc="' + d.concept + '">Read about ' + esc(conceptById[d.concept].name) + "</button>" +
+      "</div>";
+    bindDepPanel();
+  }
+  function bindDepPanel() {
+    $$("[data-dep]", depPanel).forEach(function (b) { b.addEventListener("click", function () { selectDep(b.getAttribute("data-dep")); }); });
+    $$("[data-break]", depPanel).forEach(function (b) { b.addEventListener("click", function () { breakDep(b.getAttribute("data-break")); }); });
+    $$("[data-open-svc]", depPanel).forEach(function (b) { b.addEventListener("click", function () { openService(b.getAttribute("data-open-svc")); }); });
+    $$("[data-dep-flows]", depPanel).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var d = depById[b.getAttribute("data-dep-flows")];
+        showFlowFilter({ type: "set", ids: d.flows, label: d.name });
+        goToMap();
+      });
+    });
+  }
 
   /* ================================================================ */
   /* Layers                                                           */
@@ -858,5 +1260,6 @@
   /* ================================================================ */
   /* Start                                                            */
   /* ================================================================ */
-  showExplore();
+  showLive();
+  renderDeps();
 })();

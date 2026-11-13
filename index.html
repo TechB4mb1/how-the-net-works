@@ -21,6 +21,7 @@
     </a>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a>
+      <a href="#deps">Dependencies</a>
       <a href="#layers">Layers</a>
       <a href="#addressing">Addressing</a>
       <a href="#services">Services</a>
@@ -38,7 +39,7 @@
   <section class="intro wrap">
     <p class="eyebrow">A field guide to the Internet and enterprise networks</p>
     <h1>Every login, web page and email crosses a dozen machines before you see it. Here they all are.</h1>
-    <p class="lede">Below is the complete network of Meridian Freight, a fictional 400-person company: the services it can't run without, the security controls around them, and the Internet beyond. Click any device to see what it does. Then follow a packet as it moves through the network, header by header.</p>
+    <p class="lede">Below is the complete network of Meridian Freight, a fictional 400-person company: the services it can't run without, the security controls around them, and the Internet beyond. Watch the traffic that flows through it on a normal working day, click any stream, cable or device to see what it carries, then follow single packets step by step.</p>
   </section>
 
   <!-- ============================== MAP ============================== -->
@@ -46,7 +47,8 @@
     <div class="section-head">
       <h2 id="map-h">The network map</h2>
       <div class="mode-tabs" role="tablist" aria-label="Map mode">
-        <button role="tab" id="tab-explore" aria-selected="true" aria-controls="panel" type="button">Explore devices</button>
+        <button role="tab" id="tab-live" aria-selected="true" aria-controls="panel" type="button">Live traffic</button>
+        <button role="tab" id="tab-explore" aria-selected="false" aria-controls="panel" type="button">Explore devices</button>
         <button role="tab" id="tab-journey" aria-selected="false" aria-controls="panel" type="button">Follow a packet</button>
       </div>
     </div>
@@ -63,11 +65,36 @@
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="10" r="8"/></svg>Endpoint</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="10" r="8" class="dash"/></svg>Outside our control</span>
           <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="dash"/></svg>Mirror copy or wireless</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><circle cx="9" cy="10" r="4.5" class="fdot"/><circle cx="21" cy="10" r="3.8" class="fdot rev"/></svg>Request · reply</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M10 5l10 10M20 5 10 15" class="fx"/></svg>Dropped</span>
           <span class="lg hint">Scroll sideways on small screens</span>
         </figcaption>
       </figure>
 
       <aside class="panel" id="panel" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ============================== DEPENDENCIES ============================== -->
+  <section id="deps" class="section wrap" aria-labelledby="deps-h">
+    <div class="section-head">
+      <h2 id="deps-h">What depends on what</h2>
+    </div>
+    <p class="section-lede">Services are stacked on top of each other. Users only see the top row, but each item there quietly depends on the rows beneath it. Pick a service to see its dependencies, then simulate an outage to watch how far the failure spreads.</p>
+    <div class="map-layout">
+      <figure class="map-card">
+        <div class="map-scroll">
+          <svg id="dep-svg" viewBox="0 0 1300 640" role="group" aria-label="Service dependency map"></svg>
+        </div>
+        <figcaption class="legend">
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="e-dep"/></svg>Depends on</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><path d="M2 10h26" class="e-need"/></svg>Needed by</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="5" y="4" width="20" height="12" rx="3" class="s-down"/></svg>Outage</span>
+          <span class="lg"><svg viewBox="0 0 30 20" aria-hidden="true"><rect x="5" y="4" width="20" height="12" rx="3" class="s-hit"/></svg>Fails as a result</span>
+          <span class="lg hint">Upper rows depend on lower rows</span>
+        </figcaption>
+      </figure>
+      <aside class="panel" id="dep-panel" aria-live="polite"></aside>
     </div>
   </section>
 
