@@ -601,5 +601,6 @@
   });
   $("#b-vlans").addEventListener("change", function (e) { setVlans(e.target.checked); });
 
+  if (window.I18N) $("#b-card").insertAdjacentHTML("beforeend", window.I18N.glossaryHTML(COMPS.map(function (c) { return c.abbr; }), "Short forms on this map"));
   loadPreset("small");
 })();

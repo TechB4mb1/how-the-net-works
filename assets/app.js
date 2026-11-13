@@ -5,6 +5,10 @@
   var N = window.NET;
   var SVGNS = "http://www.w3.org/2000/svg";
   var root = document.documentElement;
+  if (window.I18N) window.I18N.start();
+  Array.prototype.forEach.call(document.querySelectorAll("[data-set-lang]"), function (b) {
+    b.setAttribute("aria-pressed", b.getAttribute("data-set-lang") === (window.LANG || "en"));
+  });
 
   /* ---------------- learning level ---------------- */
   var LEVELS = ["beginner", "intermediate", "expert"];
@@ -429,16 +433,23 @@
     if (!list || !list.length) return "";
     return '<div class="only-exp deep-box"><p class="kicker">' + esc(title) + "</p><ul>" + list.map(function (d) { return "<li>" + rich(d) + "</li>"; }).join("") + "</ul></div>";
   }
+  function basics(c) {
+    if (!c.b) return "";
+    return '<dl class="basics only-beg">' +
+      "<div><dt>What it is</dt><dd>" + rich(c.b.is) + "</dd></div>" +
+      "<div><dt>What it does</dt><dd>" + rich(c.b.does) + "</dd></div>" +
+      "<div><dt>What it depends on</dt><dd>" + rich(c.b.needs) + "</dd></div></dl>";
+  }
   function conceptBody(c) {
     var html =
-      (c.easy ? '<div class="panel-block only-beg analogy"><p class="kicker">In plain words · ' + esc(c.name) + "</p><p>" + rich(c.easy) + "</p></div>" : "") +
-      '<div class="panel-block"><p class="kicker">What it is · ' + esc(c.name) + '</p><p>' + rich(c.what) + '</p></div>' +
+      basics(c) +
+      '<div class="panel-block' + (c.b ? " min-int" : "") + '"><p class="kicker">What it is · ' + esc(c.name) + '</p><p>' + rich(c.what) + '</p></div>' +
       '<div class="panel-block min-int"><p class="kicker">How it works</p><ul>' + c.how.map(function (h) { return "<li>" + rich(h) + "</li>"; }).join("") + '</ul></div>';
     var kv = "";
     if (c.ports) kv += "<dt>Ports</dt><dd>" + rich(c.ports) + "</dd>";
     if (c.examples) kv += "<dt>Examples</dt><dd>" + rich(c.examples) + "</dd>";
     if (kv) html += '<dl class="kv min-int">' + kv + "</dl>";
-    if (c.breaks) html += '<div class="callout"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>";
+    if (c.breaks) html += '<div class="callout min-int"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>";
     html += deepBox(c.deep, "Going deeper");
     html += '<div><button type="button" class="btn-link" data-open-svc="' + c.id + '">Open ' + esc(c.name) + ' in the catalog</button></div>';
     return html;
@@ -465,7 +476,7 @@
         '<span class="zone-chip">' + esc(zoneTitle(n)) + "</span>" +
         "<h3>" + esc(n.label) + "</h3>" +
         '<p class="meta min-int">' + esc(n.ip) + "</p>" +
-        "<p>" + rich(n.note) + "</p>" +
+        '<p class="min-int">' + rich(n.note) + "</p>" +
       "</div>" +
       tabs +
       '<div class="concept-body" id="concept-body">' + conceptBody(c) + "</div>" +
@@ -1188,13 +1199,13 @@
     if (c.examples) cols += "<div><h4>In the real world</h4><p>" + rich(c.examples) + "</p></div>";
     return '<details class="svc" id="svc-' + c.id + '" data-cat="' + esc(c.cat) + '" style="--cc:' + CAT_COLOR[c.cat] + '">' +
       '<summary><span class="badge">' + esc(c.abbr) + '</span><span class="sname">' + esc(c.name) + '</span><span class="swhat">' +
-        (c.easy ? '<span class="only-beg">' + rich(c.easy) + '</span><span class="min-int">' + rich(c.what) + "</span>" : rich(c.what)) + "</span></summary>" +
+        (c.b ? '<span class="only-beg">' + rich(c.b.is) + '</span><span class="min-int">' + rich(c.what) + "</span>" : rich(c.what)) + "</span></summary>" +
       '<div class="svc-body">' +
         '<p class="kicker min-int">Layer: ' + esc(c.layer) + "</p>" +
-        (c.easy ? '<p class="only-beg">' + rich(c.what) + "</p>" : "") +
+        (c.b ? '<dl class="basics only-beg"><div><dt>What it does</dt><dd>' + rich(c.b.does) + "</dd></div><div><dt>What it depends on</dt><dd>" + rich(c.b.needs) + "</dd></div></dl>" : "") +
         '<ul class="min-int">' + c.how.map(function (h) { return "<li>" + rich(h) + "</li>"; }).join("") + "</ul>" +
         (cols ? '<div class="svc-cols min-int">' + cols + "</div>" : "") +
-        (c.breaks ? '<div class="callout"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>" : "") +
+        (c.breaks ? '<div class="callout min-int"><strong>When it breaks</strong>' + rich(c.breaks) + "</div>" : "") +
         deepBox(c.deep, "Going deeper") +
         (onMap ? '<div class="panel-block"><h4>On the map</h4><div class="chips">' + onMap + "</div></div>" : "") +
         (rel ? '<div class="panel-block"><h4>Related</h4><div class="chips">' + rel + "</div></div>" : "") +
@@ -1208,7 +1219,7 @@
 
   var svcText = {};
   N.concepts.forEach(function (c) {
-    svcText[c.id] = [c.name, c.abbr, c.what, c.easy || "", c.how.join(" "), c.ports, c.examples, c.breaks, c.layer, (c.deep || []).join(" ")].join(" ").toLowerCase();
+    svcText[c.id] = [c.name, c.abbr, c.what, c.easy || "", c.b ? c.b.is + " " + c.b.does + " " + c.b.needs : "", c.how.join(" "), c.ports, c.examples, c.breaks, c.layer, (c.deep || []).join(" ")].join(" ").toLowerCase();
   });
   function filterSvc() {
     var q = svcSearch.value.trim().toLowerCase();
@@ -1324,6 +1335,18 @@
   /* ================================================================ */
   showLive();
   renderDeps();
+
+  /* Short forms on the map (beginner level) */
+  if (window.I18N) {
+    var mapAbbr = N.nodes.map(function (n) { return n.abbr; });
+    Object.keys(N.GLOSSARY || {}).forEach(function (k) {
+      N.nodes.forEach(function (n) {
+        var words = n.label.split(/[^A-Za-z0-9.]+/);
+        if (words.indexOf(k) >= 0) mapAbbr.push(k);
+      });
+    });
+    $(".map-card").insertAdjacentHTML("beforeend", window.I18N.glossaryHTML(mapAbbr, "Short forms on this map"));
+  }
 
   /* Shared helpers for builder.js */
   window.HTNW = {

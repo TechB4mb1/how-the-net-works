@@ -170,7 +170,7 @@
     $$("[data-scen]", panel).forEach(function (b) { b.addEventListener("click", function () { startScen(+b.getAttribute("data-scen")); }); });
   }
 
-  var INTRO = [
+  var INTRO = N.VINTRO || [
     { easy: "One physical server can run dozens of virtual machines. Inside it, a software switch connects them, just as a real switch connects real computers. Two servers here share the work and can pass running machines between them.",
       text: "Two hypervisor hosts run the company's servers as VMs. Each host has a distributed virtual switch with port groups mapped to VLANs, two physical uplinks trunked to a pair of top-of-rack switches, and VMkernel interfaces for management, live migration and storage.",
       deep: ["Watch for traffic that stays inside a host (invisible to physical tools) and traffic that hairpins through the core.", "Overlays (NSX, OVN) decouple VM networks from VLANs and add distributed routing and firewalling."] },
@@ -285,6 +285,14 @@
     stopPacket();
     draw();
     showIntro();
+    var g = $("#v-gloss");
+    if (g && window.I18N) {
+      var abbrs = D.nodes.map(function (n) { return n.abbr; });
+      Object.keys(N.GLOSSARY || {}).forEach(function (k) {
+        D.nodes.forEach(function (n) { if (n.label.split(/[^A-Za-z0-9.]+/).indexOf(k) >= 0) abbrs.push(k); });
+      });
+      g.innerHTML = window.I18N.glossaryHTML(abbrs, "Short forms in this diagram");
+    }
   }
   $$("[data-vtab]").forEach(function (b) { b.addEventListener("click", function () { setTab(+b.getAttribute("data-vtab")); }); });
   setTab(0);

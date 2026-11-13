@@ -4,11 +4,15 @@ An interactive field guide to how the Internet and enterprise networks fit toget
 
 The page is built around the complete network of **Meridian Freight**, a fictional 400-person company. It covers the services an enterprise can't run without, the security controls around them, and the Internet beyond.
 
+## English and German
+
+An EN/DE switch in the header changes the language of the whole page (remembered per browser; German-language browsers start in German). All content is translated, including journeys, live traffic, the builder's rules, the dependency map, the virtual network diagrams and the quizzes. Packet contents and log lines in the inspector stay in their original protocol form.
+
 ## Three learning levels
 
 A switch in the header and the intro sets the depth for the whole page (remembered per browser):
 
-- **Beginner:** plain-language analogies for every concept, simplified step text with a from → to summary, and only essential ports. Packet headers, IPs, protocol fields and jargon are hidden, and the quiz uses beginner questions.
+- **Beginner:** every concept and device is explained in three plain lines: what it is, what it does and what it depends on. Every short form (DNS, VLAN, DHCP…) is written out beside itself wherever it appears, and each diagram gets a list of the short forms it uses. Steps use simple sentences with a from → to summary, only essential ports are listed, packet headers and jargon are hidden, and the quiz uses beginner questions.
 - **Intermediate:** the full working detail: protocols, ports, firewall rules, packet inspector, address plan.
 - **Expert:** adds "Going deeper" notes to every concept, layer and device (protocol internals, attack paths, design trade-offs), expert notes per journey and scenario, an auto-generated Wireshark display filter on every packet step, expert-only ports and an expert quiz.
 
@@ -47,6 +51,9 @@ assets/data.js         base content: topology, flows, dependencies, concepts, jo
 assets/data-depth.js   beginner and expert material layered onto data.js, plus level-tagged ports and quiz
 assets/data-virtual.js virtualization and Kubernetes diagrams, scenarios and concepts
 assets/virtual.js      the virtual networks section
+assets/data-basics.js  beginner basics (is / does / depends on) and the short-form glossary (EN + DE)
+assets/i18n.js         language switch, German interface text, short-form expansion
+assets/de-*.js         German content for the map, concepts, journeys, flows, quiz and virtual networks
 assets/app.js     rendering and interaction (no libraries)
 assets/builder.js the network builder: component catalog, rules and report
 ```

@@ -36,6 +36,10 @@
       <button type="button" data-set-level="intermediate" aria-pressed="true">Intermediate</button>
       <button type="button" data-set-level="expert" aria-pressed="false">Expert</button>
     </div>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
+      <button type="button" data-set-lang="de" aria-pressed="false" lang="de">DE</button>
+    </div>
     <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch colour theme">
       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="4.2"/><path d="M10 1.5v2.2M10 16.3v2.2M1.5 10h2.2M16.3 10h2.2M4 4l1.5 1.5M14.5 14.5 16 16M4 16l1.5-1.5M14.5 5.5 16 4"/></svg>
     </button>
@@ -55,7 +59,7 @@
         <button type="button" class="level-card" data-set-level="beginner" aria-pressed="false">
           <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
           <span class="lc-name">Beginner</span>
-          <span class="lc-desc">New to networking. Plain language and analogies; ports, headers and jargon are hidden.</span>
+          <span class="lc-desc">New to networking. Every term in plain words: what it is, what it does and what it depends on. Short forms are written out.</span>
         </button>
         <button type="button" class="level-card" data-set-level="intermediate" aria-pressed="true">
           <span class="lc-bars" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -189,6 +193,7 @@
       </figure>
       <aside class="panel" id="v-panel" aria-live="polite"></aside>
     </div>
+    <div id="v-gloss"></div>
   </section>
 
   <!-- ============================== LAYERS ============================== -->
@@ -332,9 +337,14 @@
   <p>Built as a single static page: no tracking, no build step.</p>
 </footer>
 
+<script src="assets/i18n.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/data-depth.js"></script>
+<script src="assets/data-basics.js"></script>
 <script src="assets/data-virtual.js"></script>
+<script src="assets/de-core.js"></script>
+<script src="assets/de-journeys.js"></script>
+<script src="assets/de-virtual.js"></script>
 <script src="assets/app.js"></script>
 <script src="assets/builder.js"></script>
 <script src="assets/virtual.js"></script>
